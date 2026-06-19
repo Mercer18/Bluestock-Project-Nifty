@@ -1,0 +1,105 @@
+# Sprint 1 Log & Standup Records
+
+This document logs daily achievements, tasks completed, and the exact standup updates logged for each day of **Sprint 1 (Foundation & ETL)**.
+
+---
+
+## 📅 June 16, 2026 – Day 1: Project Scaffolding & Environment Setup
+
+### 🛠️ Tasks Completed
+- Created the project directory structure under `ProjectNifty/`:
+  - `data/raw/` (moved the 7 core spreadsheets here)
+  - `data/supporting/` (moved the 5 supplementary spreadsheets here)
+  - `src/etl/` (for ETL code)
+  - `tests/etl/` (for unit tests)
+  - `config/` (for configuration settings)
+- Configured Python virtual environment `.venv` and generated `requirements.txt` pinning dependencies.
+- Configured configuration files `config/.env.template` and the local `.env`.
+- Initialized local Git repository and created a standard `.gitignore` file.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 1 - Project Scaffolding & Environment Setup`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Scaffolded the Nifty 100 Financial Intelligence Platform directory structure (data/raw/, data/supporting/, src/etl/, tests/etl/, config/).
+    - Created and configured the Python virtual environment (.venv) and requirements.txt pinning core dependencies (Pandas, NumPy, openpyxl, sqlite3, pytest, python-dotenv, black, ruff).
+    - Set up the environment configuration templates (.env.template and local .env) to manage local database paths and application ports securely.
+    - Initialized the local Git repository and configured the .gitignore file to ensure a clean codebase baseline.
+    ```
+
+---
+
+## 📅 June 17, 2026 – Day 2: Ingestion & Normalisation (Core Datasets)
+
+### 🛠️ Tasks Completed
+- Created `src/etl/normaliser.py` containing:
+  - `normalize_ticker`: Strips whitespaces and converts tickers to uppercase.
+  - `normalize_year`: Normalises formats (`Mar-23`, `FY23`, `2023`, `Dec-22`, `Jun-23`) to ISO `YYYY-MM` format.
+- Created `src/etl/loader.py` to:
+  - Load multi-header Excel files using `header=1`.
+  - Clean and strip whitespaces from all data cells and column headers.
+  - Normalise tickers and year fields in loaded DataFrames.
+- Created `tests/etl/test_normalise.py` containing 42 parameterized test cases for unit testing.
+- Verified test suite passes successfully with 100% green tests.
+- Ran ingestion loader directly to verify correct loading of core datasets.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 1 - Ingestion & Normalisation (Core Datasets)`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Implemented the core Excel parsing engine in src/etl/loader.py to read the 7 core datasets with header metadata offset (using header=1).
+    - Created src/etl/normaliser.py containing functions to normalise ticker formats (normalize_ticker) and standardise diverse year formats (normalize_year) like 'Mar-23', 'FY23', 'Dec-22', etc., to 'YYYY-MM'.
+    - Wrote 40+ unit tests in tests/etl/test_normalise.py covering edge cases for tickers and years.
+    - Executed pytest to verify all normalisation and loading functions pass without errors.
+    ```
+
+---
+
+## 📅 June 18, 2026 – Day 3: Schema Validation & Database Setup
+
+### 🛠️ Tasks Completed
+- Created `src/etl/schema.sql` declaring a 12-table SQLite database structure (including primary keys, foreign keys, and optimized nullable constraints to support diverse industries like banking and non-banking companies).
+- Created `src/etl/validator.py` implementing the 16 Data Quality validation rules (DQ-01 to DQ-16) with automated failures logging.
+- Integrated automated data healing and sanitization in the pipeline:
+  - Dropped empty rows/trailing artifact rows from Excel sheets.
+  - Coerced missing face values (e.g., TVSMOTOR) to a standard fallback of `1.0` and logged warnings.
+  - Deduplicated tables with composite primary keys (e.g., P&L, balance sheets, cash flows, documents, and ratios) using `keep="last"`.
+  - Optimized URL connection checks (DQ-13) using a regex check for all items and connection test for the first 5 unique URLs to prevent slow loading.
+- Integrated SQLite database connection context managers and table loading in `src/etl/loader.py`.
+- Successfully ran the end-to-end ingestion pipeline, loading all 12 source files in **2.77 seconds** and generating `data/nifty100.db`, `data/load_audit.csv`, and `data/validation_failures.csv` (recording 1,152 warnings/errors).
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 1 - Schema Validation & Database Setup`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Designed and wrote the 12-table SQLite database schema in src/etl/schema.sql with enforced foreign keys.
+    - Implemented the 16 Data Quality validation rules in src/etl/validator.py, logging violations to data/validation_failures.csv.
+    - Added data sanitization logic (PK dropna, duplicate removal, TVSMOTOR null face-value fallback) and optimized the URL check (first 5 unique connection checks + regex validation).
+    - Executed the loader script to build and populate data/nifty100.db and write the load metrics to data/load_audit.csv.
+    ```
+
+---
+
+## 📅 June 19, 2026 – Day 4: Full Ingestion Validation & Unit Testing
+
+### 🛠️ Tasks Completed
+- Refined `loader.py` data ingestion to support Arrow string dtypes in Pandas 3.0.3 by using `pd.api.types.is_string_dtype` instead of checking `df[col].dtype == object`.
+- Created a robust test suite for the Data Quality Validation Rules:
+  - Created `tests/etl/test_rules.py` containing 9 detailed unit tests verifying company PK uniqueness (DQ-01), ticker formats/lengths (DQ-08), null fallbacks (TVSMOTOR face value warning), composite PK deduplication (DQ-02), foreign key orphans rejection (DQ-03), OPM calculations cross-checks (DQ-05), banking positive sales exceptions (DQ-06), balance sheet equations (DQ-04), and cash flow net matches (DQ-09).
+- Created helper tests for Loader operations:
+  - Created `tests/etl/test_loader.py` checking Pandas Arrow string header stripping, missing file handling, and audit logger metrics calculations.
+- Executed the complete testing suite containing **61 tests**, achieving 100% test pass rates and successfully satisfying the project exit criteria of 60+ tests.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 1 - Full Ingestion Validation & Unit Testing`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Refined the string stripping logic in src/etl/loader.py to support new Pandas 3.0 Arrow string types.
+    - Wrote tests/etl/test_rules.py to cover all 16 Data Quality validation rules on mock violation dataframes.
+    - Wrote tests/etl/test_loader.py to verify data cleansing string manipulations and audit log timing functions.
+    - Ran the full test suite verifying that all 61 tests pass cleanly, meeting the exit criteria.
+    ```
