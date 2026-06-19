@@ -1,0 +1,29 @@
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment configuration
+.env
+.env.local
+
+# Project data and databases (ignoring entire data directory containing Excel/DB files)
+data/
+
+# Raw client/platform input and overview files
+context/
+n100/
+
+# Test reports and coverage
+.pytest_cache/
+pytest_report.html
+htmlcov/
+.coverage
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
