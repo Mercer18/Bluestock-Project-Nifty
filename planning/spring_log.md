@@ -99,7 +99,29 @@ This document logs daily achievements, tasks completed, and the exact standup up
 *   **Description**:
     ```text
     - Refined the string stripping logic in src/etl/loader.py to support new Pandas 3.0 Arrow string types.
-    - Wrote tests/etl/test_rules.py to cover all 16 Data Quality validation rules on mock violation dataframes.
+    - Wrote tests/etl/test_rules.py to cover all 16 Data Quality validation rules on mock validation dataframes.
     - Wrote tests/etl/test_loader.py to verify data cleansing string manipulations and audit log timing functions.
     - Ran the full test suite verifying that all 61 tests pass cleanly, meeting the exit criteria.
+    ```
+
+---
+
+## 📅 June 20, 2026 – Day 5: Supplementary Ingestion & Full Load
+
+### 🛠️ Tasks Completed
+- Ingested all 5 supplementary files (`sectors.xlsx`, `market_cap.xlsx`, `stock_prices.xlsx`, `peer_groups.xlsx`, `financial_ratios.xlsx`) from `data/supporting/` using header=0.
+- Executed the full ETL pipeline to merge core and supplementary tables into `data/nifty100.db`.
+- Generated the load metrics log `data/load_audit.csv` verifying loaded rows, raw rows, rejections, and execution timings per table.
+- Generated `data/validation_failures.csv` logging all 1,152 data quality warnings/info constraints.
+- Verified that all foreign key constraints and primary keys are successfully populated in the SQLite relational database.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 1 - Supplementary Ingestion & Full Load`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Ingested all 5 supplementary datasets (sectors, market cap, stock prices, peer groups, financial ratios) into the relational database.
+    - Ran the complete ETL pipeline loading ~11,000+ data points across 12 tables and generated the load audit report load_audit.csv.
+    - Logged all data warnings to validation_failures.csv and verified zero critical schema failures.
+    - Maintained Git version control records on the public repository.
     ```
