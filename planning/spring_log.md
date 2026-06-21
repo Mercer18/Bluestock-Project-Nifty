@@ -120,8 +120,30 @@ This document logs daily achievements, tasks completed, and the exact standup up
 *   **Category**: `Data Analysis`
 *   **Description**:
     ```text
-    - Ingested all 5 supplementary datasets (sectors, market cap, stock prices, peer groups, financial ratios) into the relational database.
+    - Ingested all 5 supplementary datasets (sectors, market cap, stock prices, peer_groups, financial_ratios) into the relational database.
     - Ran the complete ETL pipeline loading ~11,000+ data points across 12 tables and generated the load audit report load_audit.csv.
     - Logged all data warnings to validation_failures.csv and verified zero critical schema failures.
     - Maintained Git version control records on the public repository.
+    ```
+
+---
+
+## 📅 June 21, 2026 – Day 6: Data Quality Manual Review
+
+### 🛠️ Tasks Completed
+- Conducted a data quality manual review auditing **5 key constituent companies** across all SQLite tables: TCS, HDFCBANK, SBILIFE, INFY, and TVSMOTOR.
+- Verified string normalisation, year standardisation, and mathematical equations (Assets = Liabilities balance verification).
+- Discovered a critical dataset anomaly: **Wipro (WIPRO)** is present in `analysis.xlsx` but missing from the master index mapping in `companies.xlsx`. The validator correctly logged it as a critical foreign key violation (DQ-03) and excluded it to maintain database integrity.
+- Verified TVSMOTOR's missing face value is correctly coerced to `1.0` and logged as a warning.
+- Documented all data quality findings, row counts, and spot checks inside `docs/dq_review_notes.md`.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 1 - Data Quality Manual Review`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Conducted manual spot-checking for 5 diverse constituent companies (TCS, HDFCBANK, SBILIFE, INFY, TVSMOTOR) across all database tables.
+    - Verified mathematical balance, primary key uniqueness, and custom normalisation logic on the populated SQLite database.
+    - Identified a critical data anomaly (WIPRO orphan record in analysis.xlsx) and documented the self-healing actions.
+    - Written up the comprehensive QA notes in docs/dq_review_notes.md.
     ```
