@@ -170,3 +170,26 @@ This document logs daily achievements, tasks completed, and the exact standup up
     - Verified that 100% of the 61 pytest test cases pass cleanly without errors.
     - Tagged the release version v1.0-sprint1 and pushed all project changes to GitHub.
     ```
+
+---
+
+## 📅 June 23, 2026 – Day 8: Profitability Ratio Engine & Auto-Healing Integration
+
+### 🛠️ Tasks Completed
+- Initiated Sprint 2 (Ratio Engine) by creating the profitability calculations module in `src/analytics/ratios.py`.
+- Implemented core profitability ratio formulas (NPM, OPM, ROE, ROCE) with strict edge-case handling for division-by-zero, negative or zero shareholders' equity, and missing input values.
+- Discovered a critical column-shifting anomaly in the raw `profitandloss.xlsx` dataset affecting 6 non-financial companies (Cipla, Coal India, Hero Motocorp, Hindalco, Hindustan Unilever, IndiGo).
+- Developed and integrated an auto-detection and healing routine in `ratios.py` that identifies shifted raw rows dynamically (`sales - expenses != operating_profit` and `sales - operating_profit == opm_percentage`) and shifts columns back, healing 88 records.
+- Wrote 12 comprehensive unit test cases in `tests/kpi/test_profitability.py` validating ratio logic, division by zero, null defaults, and negative equity.
+- Executed the entire test suite, verifying that all 73 pytest tests pass successfully (100% green).
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 2 - Profitability Ratio Engine & Auto-Healing Integration`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Initiated Sprint 2 by writing src/analytics/ratios.py to compute profitability KPIs (NPM, OPM, ROE, ROCE) with robust null and division-by-zero protections.
+    - Discovered a critical column shift bug in raw profitandloss.xlsx affecting 6 major non-financial companies and implemented an auto-healing algorithm that detects and shifts raw data cells back to correct columns on the fly.
+    - Wrote 12 unit tests in tests/kpi/test_profitability.py covering calculation logic and edge cases (negative equity, zero sales).
+    - Executed the full pytest suite confirming all 73 tests pass.
+    ```
