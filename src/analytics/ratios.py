@@ -80,6 +80,57 @@ def calculate_roce(pbt: float, interest: float, equity_capital: float, reserves:
         
     return float((ebit / capital_employed) * 100)
 
+def calculate_de(borrowings: float, equity_capital: float, reserves: float) -> float | None:
+    """
+    Calculates Debt-to-Equity (D/E) ratio.
+    D/E = Borrowings / (Equity Capital + Reserves)
+    Returns 0.0 if borrowings is 0 or None (provided equity + reserves is positive).
+    Returns None if Shareholders' Equity <= 0 or if inputs are None.
+    """
+    eq = equity_capital if equity_capital is not None and not pd.isna(equity_capital) else 0.0
+    res = reserves if reserves is not None and not pd.isna(reserves) else 0.0
+    
+    if (equity_capital is None or pd.isna(equity_capital)) and (reserves is None or pd.isna(reserves)):
+        return None
+        
+    equity = eq + res
+    if equity <= 0:
+        return None
+        
+    borr = borrowings if borrowings is not None and not pd.isna(borrowings) else 0.0
+    return float(borr / equity)
+
+def calculate_icr(operating_profit: float, other_income: float, interest: float) -> float | None:
+    """
+    Calculates Interest Coverage Ratio (ICR).
+    ICR = (Operating Profit + Other Income) / Interest
+    Returns 999.0 if interest is 0, negative, or None (interpreted as 'Debt Free').
+    If both operating_profit and other_income are None, returns None.
+    """
+    if interest is None or pd.isna(interest) or interest <= 0:
+        return 999.0
+        
+    op = operating_profit if operating_profit is not None and not pd.isna(operating_profit) else 0.0
+    oth = other_income if other_income is not None and not pd.isna(other_income) else 0.0
+    
+    if (operating_profit is None or pd.isna(operating_profit)) and (other_income is None or pd.isna(other_income)):
+        return None
+        
+    ebit = op + oth
+    return float(ebit / interest)
+
+def calculate_asset_turnover(sales: float, total_assets: float) -> float | None:
+    """
+    Calculates Asset Turnover.
+    Asset Turnover = Sales / Total Assets
+    Returns None if total_assets <= 0 or if inputs are None.
+    """
+    if total_assets is None or pd.isna(total_assets) or total_assets <= 0:
+        return None
+    if sales is None or pd.isna(sales):
+        return None
+    return float(sales / total_assets)
+
 class ProfitabilityRatioEngine:
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -103,8 +154,8 @@ class ProfitabilityRatioEngine:
         """
         df_pl = pd.read_sql_query(pl_query, conn)
         
-        # Load Balance Sheet
-        bs_query = "SELECT company_id, year, equity_capital, reserves, borrowings FROM balancesheet"
+        # Load Balance Sheet (include total_assets for asset turnover)
+        bs_query = "SELECT company_id, year, equity_capital, reserves, borrowings, total_assets FROM balancesheet"
         df_bs = pd.read_sql_query(bs_query, conn)
         
         conn.close()
@@ -143,7 +194,7 @@ class ProfitabilityRatioEngine:
 
     def run_calculations(self) -> pd.DataFrame:
         """
-        Runs calculations for NPM, OPM, ROE, and ROCE across all merged records.
+        Runs calculations for all profitability, leverage, and efficiency KPIs across all merged records.
         """
         df = self.load_financial_data()
         
@@ -151,6 +202,9 @@ class ProfitabilityRatioEngine:
         opm_list = []
         roe_list = []
         roce_list = []
+        de_list = []
+        icr_list = []
+        at_list = []
         
         for _, row in df.iterrows():
             # NPM
@@ -175,6 +229,18 @@ class ProfitabilityRatioEngine:
             )
             roce_list.append(roce)
             
+            # D/E
+            de = calculate_de(row["borrowings"], row["equity_capital"], row["reserves"])
+            de_list.append(de)
+            
+            # ICR
+            icr = calculate_icr(row["operating_profit"], row["other_income"], row["interest"])
+            icr_list.append(icr)
+            
+            # Asset Turnover
+            at = calculate_asset_turnover(row["sales"], row["total_assets"])
+            at_list.append(at)
+            
             # OPM Cross-Validation (DQ-05)
             if opm is not None and row["opm_percentage"] is not None:
                 source_opm = float(row["opm_percentage"])
@@ -192,6 +258,9 @@ class ProfitabilityRatioEngine:
         df["computed_opm"] = opm_list
         df["computed_roe"] = roe_list
         df["computed_roce"] = roce_list
+        df["computed_de"] = de_list
+        df["computed_icr"] = icr_list
+        df["computed_asset_turnover"] = at_list
         
         return df
 
@@ -200,12 +269,15 @@ class ProfitabilityRatioEngine:
         Calculates ratios, checks deviations, and prints verification summary.
         """
         df_results = self.run_calculations()
-        print("\n=== SPRINT 2: PROFITABILITY RATIO ENGINE VALIDATION ===")
+        print("\n=== SPRINT 2: RATIO ENGINE VALIDATION ===")
         print(f"Total company-year combinations evaluated: {len(df_results)}")
         print(f"Calculated NPM count: {df_results['computed_npm'].notna().sum()}")
         print(f"Calculated OPM count: {df_results['computed_opm'].notna().sum()}")
         print(f"Calculated ROE count: {df_results['computed_roe'].notna().sum()}")
         print(f"Calculated ROCE count: {df_results['computed_roce'].notna().sum()}")
+        print(f"Calculated D/E count: {df_results['computed_de'].notna().sum()}")
+        print(f"Calculated ICR count: {df_results['computed_icr'].notna().sum()}")
+        print(f"Calculated Asset Turnover count: {df_results['computed_asset_turnover'].notna().sum()}")
         
         print(f"\nTotal OPM deviations (> 1.0% vs source) found: {len(self.deviations)}")
         if len(self.deviations) > 0:

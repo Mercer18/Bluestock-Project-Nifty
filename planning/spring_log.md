@@ -193,3 +193,25 @@ This document logs daily achievements, tasks completed, and the exact standup up
     - Wrote 12 unit tests in tests/kpi/test_profitability.py covering calculation logic and edge cases (negative equity, zero sales).
     - Executed the full pytest suite confirming all 73 tests pass.
     ```
+
+---
+
+## 📅 June 24, 2026 – Day 9: Leverage & Efficiency Ratio Engine
+
+### 🛠️ Tasks Completed
+- Implemented leverage and efficiency calculations inside `src/analytics/ratios.py` covering Debt-to-Equity (D/E), Interest Coverage Ratio (ICR), and Asset Turnover.
+- Configured edge-case overrides for debt-free companies, including returning `0.0` for D/E when borrowings are zero, and returning `999.0` for ICR (substituting for 'Debt Free' display) when interest expenses are zero or None.
+- Updated database query fields inside `load_financial_data` to select `total_assets` from the `balancesheet` table to support Asset Turnover.
+- Wrote 10 comprehensive unit test cases inside `tests/kpi/test_leverage.py` verifying leverage ratios, debt-free overrides, negative equity, and asset turnover boundaries.
+- Executed the entire test suite, confirming that all 83 pytest unit tests pass cleanly (100% success rate).
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 2 - Leverage & Efficiency Ratio Engine`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Implemented leverage and efficiency ratios (D/E, Interest Coverage ICR, Asset Turnover) inside src/analytics/ratios.py with custom edge-case overrides.
+    - Added debt-free substitution to calculate 999.0 for companies with zero interest expenses and zero borrowings default checks.
+    - Wrote 10 unit test cases in tests/kpi/test_leverage.py validating calculations, zero values, and null overrides.
+    - Ran the full pytest suite confirming that all 83 test cases pass cleanly (100% success rate).
+    ```
