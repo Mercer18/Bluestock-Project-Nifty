@@ -215,3 +215,25 @@ This document logs daily achievements, tasks completed, and the exact standup up
     - Wrote 10 unit test cases in tests/kpi/test_leverage.py validating calculations, zero values, and null overrides.
     - Ran the full pytest suite confirming that all 83 test cases pass cleanly (100% success rate).
     ```
+
+---
+
+## 📅 June 25, 2026 – Day 10: CAGR Growth Engine & Turnaround Logging
+
+### 🛠️ Tasks Completed
+- Implemented the CAGR calculation engine inside `src/analytics/cagr.py` covering Sales (Revenue), Net Profit (PAT), and EPS CAGR for 3-year, 5-year, and 10-year lookback windows.
+- Developed lookup logic supporting historical lookback year calculation (mapping `YYYY-MM` to `(YYYY-N)-MM`) to find start values from the P&L table.
+- Implemented turnaround edge case logic to detect when a company moves from loss/zero to profit (start <= 0, end > 0), returning `None` and logging 169 warning messages to `data/ratio_edge_cases.log`.
+- Created `tests/kpi/test_cagr.py` containing 4 unit tests validating normal CAGR calculations, null inputs, zero/negative base numbers, and verifying correct logging of turnaround cases.
+- Executed the complete test suite, verifying all 87 pytest test cases pass cleanly (100% success rate).
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 2 - CAGR Growth Engine & Turnaround Logging`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Implemented a historical lookup CAGR growth calculation engine in src/analytics/cagr.py covering 3-year, 5-year, and 10-year windows for Revenue, PAT, and EPS.
+    - Integrated turnaround detection logic to catch loss-to-profit transitions, logging 169 instances to data/ratio_edge_cases.log.
+    - Wrote 4 unit test cases in tests/kpi/test_cagr.py verifying calculations, null lookbacks, and log write operations.
+    - Executed the entire pytest suite, achieving 100% success rate across all 87 tests.
+    ```
