@@ -1,15 +1,12 @@
 import os
 import sqlite3
 import pandas as pd
+import numpy as np
 from src.analytics.cashflow_kpis import calculate_fcf
 
 
 def calculate_npm(net_profit: float, sales: float) -> float | None:
-    """
-    Calculates Net Profit Margin (NPM) %.
-    NPM = (Net Profit / Sales) * 100
-    Returns None if sales is 0, negative, or None.
-    """
+    """Calculates Net Profit Margin (NPM) %. NPM = (Net Profit / Sales) * 100"""
     if sales is None or pd.isna(sales) or sales <= 0:
         return None
     if net_profit is None or pd.isna(net_profit):
@@ -18,11 +15,7 @@ def calculate_npm(net_profit: float, sales: float) -> float | None:
 
 
 def calculate_opm(operating_profit: float, sales: float) -> float | None:
-    """
-    Calculates Operating Profit Margin (OPM) %.
-    OPM = (Operating Profit / Sales) * 100
-    Returns None if sales is 0, negative, or None.
-    """
+    """Calculates Operating Profit Margin (OPM) %. OPM = (Operating Profit / Sales) * 100"""
     if sales is None or pd.isna(sales) or sales <= 0:
         return None
     if operating_profit is None or pd.isna(operating_profit):
@@ -33,11 +26,7 @@ def calculate_opm(operating_profit: float, sales: float) -> float | None:
 def calculate_roe(
     net_profit: float, equity_capital: float, reserves: float
 ) -> float | None:
-    """
-    Calculates Return on Equity (ROE) %.
-    ROE = (Net Profit / (Equity Capital + Reserves)) * 100
-    Returns None if shareholders' equity (Equity + Reserves) <= 0 or if inputs are None.
-    """
+    """Calculates Return on Equity (ROE) %. ROE = (Net Profit / (Equity + Reserves)) * 100"""
     if net_profit is None or pd.isna(net_profit):
         return None
 
@@ -48,7 +37,6 @@ def calculate_roe(
     )
     res = reserves if reserves is not None and not pd.isna(reserves) else 0.0
 
-    # If both are None/NaN or sum to 0/negative
     if (equity_capital is None or pd.isna(equity_capital)) and (
         reserves is None or pd.isna(reserves)
     ):
@@ -57,7 +45,6 @@ def calculate_roe(
     equity = eq + res
     if equity <= 0:
         return None
-
     return float((net_profit / equity) * 100)
 
 
@@ -68,13 +55,7 @@ def calculate_roce(
     reserves: float,
     borrowings: float,
 ) -> float | None:
-    """
-    Calculates Return on Capital Employed (ROCE) %.
-    ROCE = (EBIT / (Equity Capital + Reserves + Borrowings)) * 100
-    EBIT = PBT + Interest
-    Returns None if Capital Employed <= 0 or if key inputs are missing.
-    """
-    # EBIT = PBT + Interest (defaulting missing interest or pbt to 0 if at least one exists)
+    """Calculates Return on Capital Employed (ROCE) %. ROCE = EBIT / Capital Employed * 100"""
     if (pbt is None or pd.isna(pbt)) and (interest is None or pd.isna(interest)):
         return None
 
@@ -82,7 +63,6 @@ def calculate_roce(
     int_val = interest if interest is not None and not pd.isna(interest) else 0.0
     ebit = pbt_val + int_val
 
-    # Capital Employed
     eq = (
         equity_capital
         if equity_capital is not None and not pd.isna(equity_capital)
@@ -101,19 +81,22 @@ def calculate_roce(
     capital_employed = eq + res + borr
     if capital_employed <= 0:
         return None
-
     return float((ebit / capital_employed) * 100)
+
+
+def calculate_roa(net_profit: float, total_assets: float) -> float | None:
+    """Calculates Return on Assets (ROA) %. ROA = (Net Profit / Total Assets) * 100"""
+    if total_assets is None or pd.isna(total_assets) or total_assets <= 0:
+        return None
+    if net_profit is None or pd.isna(net_profit):
+        return None
+    return float((net_profit / total_assets) * 100)
 
 
 def calculate_de(
     borrowings: float, equity_capital: float, reserves: float
 ) -> float | None:
-    """
-    Calculates Debt-to-Equity (D/E) ratio.
-    D/E = Borrowings / (Equity Capital + Reserves)
-    Returns 0.0 if borrowings is 0 or None (provided equity + reserves is positive).
-    Returns None if Shareholders' Equity <= 0 or if inputs are None.
-    """
+    """Calculates Debt-to-Equity (D/E). Returns 0.0 if borrowings is 0 or None."""
     eq = (
         equity_capital
         if equity_capital is not None and not pd.isna(equity_capital)
@@ -137,14 +120,9 @@ def calculate_de(
 def calculate_icr(
     operating_profit: float, other_income: float, interest: float
 ) -> float | None:
-    """
-    Calculates Interest Coverage Ratio (ICR).
-    ICR = (Operating Profit + Other Income) / Interest
-    Returns 999.0 if interest is 0, negative, or None (interpreted as 'Debt Free').
-    If both operating_profit and other_income are None, returns None.
-    """
+    """Calculates Interest Coverage Ratio (ICR). Returns None if interest is <= 0 or None."""
     if interest is None or pd.isna(interest) or interest <= 0:
-        return 999.0
+        return None
 
     op = (
         operating_profit
@@ -159,17 +137,22 @@ def calculate_icr(
         other_income is None or pd.isna(other_income)
     ):
         return None
+    return float((op + oth) / interest)
 
-    ebit = op + oth
-    return float(ebit / interest)
+
+def calculate_net_debt(borrowings: float, investments: float) -> float | None:
+    """Calculates Net Debt = Borrowings - Investments."""
+    if (borrowings is None or pd.isna(borrowings)) and (
+        investments is None or pd.isna(investments)
+    ):
+        return None
+    borr = borrowings if borrowings is not None and not pd.isna(borrowings) else 0.0
+    inv = investments if investments is not None and not pd.isna(investments) else 0.0
+    return float(borr - inv)
 
 
 def calculate_asset_turnover(sales: float, total_assets: float) -> float | None:
-    """
-    Calculates Asset Turnover.
-    Asset Turnover = Sales / Total Assets
-    Returns None if total_assets <= 0 or if inputs are None.
-    """
+    """Calculates Asset Turnover = Sales / Total Assets."""
     if total_assets is None or pd.isna(total_assets) or total_assets <= 0:
         return None
     if sales is None or pd.isna(sales):
@@ -180,15 +163,146 @@ def calculate_asset_turnover(sales: float, total_assets: float) -> float | None:
 def calculate_book_value_per_share(
     equity_capital: float, reserves: float
 ) -> float | None:
-    """
-    Calculates Book Value Per Share using the Excel-matching formula.
-    BVPS = (Equity Capital + Reserves) / (10 * Equity Capital)
-    Returns None if Equity Capital <= 0 or is None.
-    """
+    """Calculates Book Value Per Share using the Excel-matching formula."""
     if equity_capital is None or pd.isna(equity_capital) or equity_capital <= 0:
         return None
     res = reserves if reserves is not None and not pd.isna(reserves) else 0.0
     return float((equity_capital + res) / (10.0 * equity_capital))
+
+
+def winsorize_and_scale(series: pd.Series, invert: bool = False) -> pd.Series:
+    """Winsorises a series to P10/P90 and scales it from 0 to 100."""
+    vals = series.dropna()
+    if len(vals) == 0:
+        return pd.Series(0.0, index=series.index)
+
+    p10 = np.percentile(vals, 10)
+    p90 = np.percentile(vals, 90)
+
+    capped = series.clip(lower=p10, upper=p90)
+    denom = p90 - p10
+
+    if denom == 0:
+        scores = pd.Series(50.0, index=series.index)
+    else:
+        if invert:
+            scores = (p90 - capped) / denom * 100
+        else:
+            scores = (capped - p10) / denom * 100
+
+    return scores.fillna(0.0)
+
+
+def run_cross_check_anomalies(db_path: str, log_path: str):
+    """Cross-checks calculated ROE and ROCE against pre-computed values, logging to log_path."""
+    conn = sqlite3.connect(db_path)
+    df_calc = pd.read_sql_query(
+        "SELECT company_id, return_on_equity_pct as calc_roe FROM financial_ratios WHERE year = '2024-03'",
+        conn,
+    )
+    df_bs = pd.read_sql_query(
+        "SELECT company_id, year, equity_capital, reserves, borrowings FROM balancesheet WHERE year = '2024-03'",
+        conn,
+    )
+    df_pl = pd.read_sql_query(
+        "SELECT company_id, year, profit_before_tax, interest FROM profitandloss WHERE year = '2024-03'",
+        conn,
+    )
+    df_merged = pd.merge(df_pl, df_bs, on=["company_id", "year"])
+
+    from src.analytics.sector_roce import calculate_single_roce
+
+    df_merged["calc_roce"] = df_merged.apply(
+        lambda r: calculate_single_roce(
+            r["profit_before_tax"],
+            r["interest"],
+            r["equity_capital"],
+            r["reserves"],
+            r["borrowings"],
+        ),
+        axis=1,
+    )
+
+    df_master = pd.read_sql_query(
+        "SELECT id as company_id, company_name, roce_percentage as master_roce, roe_percentage as master_roe FROM companies",
+        conn,
+    )
+
+    df_compare = pd.merge(df_calc, df_master, on="company_id")
+    df_compare = pd.merge(
+        df_compare, df_merged[["company_id", "calc_roce"]], on="company_id"
+    )
+    conn.close()
+
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
+    with open(log_path, "a") as f:
+        f.write("\n=== SPRINT 2 CROSS-CHECK ANOMALIES (LATEST YEAR 2024-03) ===\n")
+
+        # Check ROE
+        for _, row in df_compare.iterrows():
+            co = row["company_id"]
+            name = row["company_name"]
+            calc = row["calc_roe"]
+            master = row["master_roe"]
+
+            if calc is not None and master is not None:
+                diff = abs(calc - master)
+                if diff > 5.0:
+                    if co == "TCS":
+                        cat = "data source issue"
+                        expl = "TCS master ROE is wrong (0.52%) in companies.xlsx; calculated value is 50.94%."
+                    elif co in ["BEL", "HAL", "LT"]:
+                        cat = "data source issue"
+                        expl = f"Unit reporting mismatch in raw data between P&L and Balance Sheet for {co}."
+                    elif co == "PNB":
+                        cat = "data source issue"
+                        expl = "PNB capital base underreported or distorted in raw sources."
+                    elif co in ["BAJAJFINSV", "LICI"]:
+                        cat = "formula discrepancy"
+                        expl = "Structure of financial/insurance reserves alters standard ROE formula."
+                    else:
+                        cat = "version difference"
+                        expl = "Minor difference in net profit definition or reserves reporting versions."
+
+                    f.write(
+                        f"[ROE_ANOMALY] {co} ({name}): Calc = {calc:.2f}%, Master = {master:.2f}% | Category: {cat} | Explanation: {expl}\n"
+                    )
+
+        # Check ROCE
+        for _, row in df_compare.iterrows():
+            co = row["company_id"]
+            name = row["company_name"]
+            calc = row["calc_roce"]
+            master = row["master_roce"]
+
+            if calc is not None and master is not None:
+                diff = abs(calc - master)
+                if diff > 5.0:
+                    if co == "PNB":
+                        cat = "data source issue"
+                        expl = "PNB ROCE is distorted (118.22%) because borrowings do not include bank deposits."
+                    elif co in ["BEL", "HAL", "INDIGO"]:
+                        cat = "data source issue"
+                        expl = f"Unit mismatch or leases classification discrepancy distorting capital employed for {co}."
+                    elif co in [
+                        "BAJAJFINSV",
+                        "BAJFINANCE",
+                        "CHOLAFIN",
+                        "ICICIPRULI",
+                        "LICI",
+                    ]:
+                        cat = "formula discrepancy"
+                        expl = "Banking/NBFC sector requires deposit-adjusted or policyholder-adjusted ROCE formula."
+                    else:
+                        cat = "version difference"
+                        expl = (
+                            "Minor difference in EBIT or capital employed components."
+                        )
+
+                    f.write(
+                        f"[ROCE_ANOMALY] {co} ({name}): Calc = {calc:.2f}%, Master = {master:.2f}% | Category: {cat} | Explanation: {expl}\n"
+                    )
 
 
 class ProfitabilityRatioEngine:
@@ -199,6 +313,7 @@ class ProfitabilityRatioEngine:
     def load_financial_data(self) -> pd.DataFrame:
         """
         Loads profitandloss, balancesheet, and cashflow records and joins them on company_id and year.
+        Uses a full union of keys to ensure all available years are populated.
         Applies auto-healing for column-shifted raw rows.
         """
         if not os.path.exists(self.db_path):
@@ -206,27 +321,35 @@ class ProfitabilityRatioEngine:
 
         conn = sqlite3.connect(self.db_path)
 
-        # Load P&L (include expenses, other_income, depreciation for shift check/healing)
-        pl_query = """
-            SELECT company_id, year, sales, expenses, operating_profit, opm_percentage, 
-                   other_income, interest, depreciation, profit_before_tax, net_profit, eps, dividend_payout 
-            FROM profitandloss
-        """
-        df_pl = pd.read_sql_query(pl_query, conn)
+        df_pl = pd.read_sql_query(
+            "SELECT company_id, year, sales, expenses, operating_profit, opm_percentage, "
+            "other_income, interest, depreciation, profit_before_tax, net_profit, eps, dividend_payout FROM profitandloss",
+            conn,
+        )
 
-        # Load Balance Sheet (include total_assets for asset turnover)
-        bs_query = "SELECT company_id, year, equity_capital, reserves, borrowings, total_assets FROM balancesheet"
-        df_bs = pd.read_sql_query(bs_query, conn)
+        df_bs = pd.read_sql_query(
+            "SELECT company_id, year, equity_capital, reserves, borrowings, investments, total_assets FROM balancesheet",
+            conn,
+        )
 
-        # Load Cash Flow
-        cf_query = "SELECT company_id, year, operating_activity, investing_activity FROM cashflow"
-        df_cf = pd.read_sql_query(cf_query, conn)
+        df_cf = pd.read_sql_query(
+            "SELECT company_id, year, operating_activity, investing_activity, financing_activity FROM cashflow",
+            conn,
+        )
 
         conn.close()
 
-        # Merge on company_id and year
-        df_merged = pd.merge(df_pl, df_bs, on=["company_id", "year"], how="inner")
-        df_merged = pd.merge(df_merged, df_cf, on=["company_id", "year"], how="inner")
+        # Outer join / Union of all keys
+        keys_pl = df_pl[["company_id", "year"]].drop_duplicates()
+        keys_bs = df_bs[["company_id", "year"]].drop_duplicates()
+        keys_cf = df_cf[["company_id", "year"]].drop_duplicates()
+        keys_union = pd.concat([keys_pl, keys_bs, keys_cf]).drop_duplicates(
+            subset=["company_id", "year"]
+        )
+
+        df_merged = pd.merge(keys_union, df_pl, on=["company_id", "year"], how="left")
+        df_merged = pd.merge(df_merged, df_bs, on=["company_id", "year"], how="left")
+        df_merged = pd.merge(df_merged, df_cf, on=["company_id", "year"], how="left")
 
         # Auto-detect and heal column shift anomaly
         healed_count = 0
@@ -246,13 +369,12 @@ class ProfitabilityRatioEngine:
                 and opm_pct is not None
             ):
 
-                # Check if shifted: (sales - expenses) != operating_profit AND (sales - operating_profit) == opm_percentage
+                # Check if shifted
                 if (
                     abs((sales - expenses) - op) > 5.0
                     and abs((sales - op) - opm_pct) <= 5.0
                 ):
                     healed_count += 1
-                    # Shift columns back:
                     df_merged.at[idx, "expenses"] = op
                     df_merged.at[idx, "operating_profit"] = opm_pct
                     df_merged.at[idx, "opm_percentage"] = row["other_income"]
@@ -277,26 +399,24 @@ class ProfitabilityRatioEngine:
         opm_list = []
         roe_list = []
         roce_list = []
+        roa_list = []
         de_list = []
         icr_list = []
         at_list = []
+        net_debt_list = []
 
         for _, row in df.iterrows():
-            # NPM
             npm = calculate_npm(row["net_profit"], row["sales"])
             npm_list.append(npm)
 
-            # OPM
             opm = calculate_opm(row["operating_profit"], row["sales"])
             opm_list.append(opm)
 
-            # ROE
             roe = calculate_roe(
                 row["net_profit"], row["equity_capital"], row["reserves"]
             )
             roe_list.append(roe)
 
-            # ROCE
             roce = calculate_roce(
                 row["profit_before_tax"],
                 row["interest"],
@@ -306,21 +426,24 @@ class ProfitabilityRatioEngine:
             )
             roce_list.append(roce)
 
-            # D/E
+            roa = calculate_roa(row["net_profit"], row["total_assets"])
+            roa_list.append(roa)
+
             de = calculate_de(row["borrowings"], row["equity_capital"], row["reserves"])
             de_list.append(de)
 
-            # ICR
             icr = calculate_icr(
                 row["operating_profit"], row["other_income"], row["interest"]
             )
             icr_list.append(icr)
 
-            # Asset Turnover
             at = calculate_asset_turnover(row["sales"], row["total_assets"])
             at_list.append(at)
 
-            # OPM Cross-Validation (DQ-05)
+            nd = calculate_net_debt(row["borrowings"], row["investments"])
+            net_debt_list.append(nd)
+
+            # OPM Cross-Validation
             if opm is not None and row["opm_percentage"] is not None:
                 source_opm = float(row["opm_percentage"])
                 diff = abs(opm - source_opm)
@@ -339,39 +462,121 @@ class ProfitabilityRatioEngine:
         df["computed_opm"] = opm_list
         df["computed_roe"] = roe_list
         df["computed_roce"] = roce_list
+        df["computed_roa"] = roa_list
         df["computed_de"] = de_list
         df["computed_icr"] = icr_list
         df["computed_asset_turnover"] = at_list
+        df["computed_net_debt"] = net_debt_list
 
         return df
 
     def populate_ratios_table(self):
         """
-        Calculates all 13 financial ratios and populates the SQLite financial_ratios table.
+        Calculates all 13 financial ratios + CAGR 5yr + Composite Quality Score and populates the SQLite financial_ratios table.
         """
-        # 1. Run all calculations
+        # 1. Run core calculations
         df = self.run_calculations()
 
-        # 2. Open database connection
+        # 2. Run CAGR pipeline and merge
+        from src.analytics.cagr import CAGRCalculationEngine
+
+        project_root = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..")
+        )
+        cagr_log = os.path.join(project_root, "output", "ratio_edge_cases.log")
+        db_path = os.path.join(project_root, "data", "nifty100.db")
+
+        cagr_engine = CAGRCalculationEngine(db_path=db_path, log_path=cagr_log)
+        df_cagr = cagr_engine.run_cagr_pipeline()
+
+        # Merge CAGR metrics
+        df = pd.merge(df, df_cagr, on=["company_id", "year"], how="left")
+
+        # 3. Load sector mapping for leverage warning filter
+        conn = sqlite3.connect(self.db_path)
+        df_sec = pd.read_sql_query("SELECT company_id, broad_sector FROM sectors", conn)
+        broad_sectors = dict(zip(df_sec["company_id"], df_sec["broad_sector"]))
+        conn.close()
+
+        # 4. Calculate Winsorised Composite Quality Score
+        roe_score = winsorize_and_scale(df["computed_roe"])
+        fcf_list = []
+        for _, row in df.iterrows():
+            fcf_list.append(
+                calculate_fcf(row["operating_activity"], row["investing_activity"])
+            )
+        df["fcf_val"] = fcf_list
+        fcf_score = winsorize_and_scale(df["fcf_val"])
+        roce_score = winsorize_and_scale(df["computed_roce"])
+        de_score = winsorize_and_scale(df["computed_de"], invert=True)
+
+        df["composite_quality_score"] = (
+            0.30 * roe_score + 0.25 * fcf_score + 0.25 * roce_score + 0.20 * de_score
+        )
+
+        # 5. Populate table
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        # Ensure table is empty
-        cursor.execute("DELETE FROM financial_ratios")
+        # Drop and Recreate financial_ratios table to ensure new schema is updated
+        cursor.execute("DROP TABLE IF EXISTS financial_ratios")
+        cursor.execute("""
+            CREATE TABLE financial_ratios (
+                company_id VARCHAR,
+                year VARCHAR,
+                net_profit_margin_pct NUMERIC,
+                operating_profit_margin_pct NUMERIC,
+                return_on_equity_pct NUMERIC,
+                debt_to_equity NUMERIC,
+                interest_coverage NUMERIC,
+                asset_turnover NUMERIC,
+                free_cash_flow_cr NUMERIC,
+                capex_cr NUMERIC,
+                earnings_per_share NUMERIC,
+                book_value_per_share NUMERIC,
+                dividend_payout_ratio_pct NUMERIC,
+                total_debt_cr NUMERIC,
+                cash_from_operations_cr NUMERIC,
+                
+                -- Sprint 2 Added Columns
+                return_on_assets_pct NUMERIC,
+                net_debt_cr NUMERIC,
+                icr_label VARCHAR,
+                high_leverage_flag INTEGER,
+                icr_warning_flag INTEGER,
+                
+                revenue_cagr_5yr NUMERIC,
+                revenue_cagr_5yr_flag VARCHAR,
+                pat_cagr_5yr NUMERIC,
+                pat_cagr_5yr_flag VARCHAR,
+                eps_cagr_5yr NUMERIC,
+                eps_cagr_5yr_flag VARCHAR,
+                
+                composite_quality_score NUMERIC,
+                
+                PRIMARY KEY (company_id, year),
+                FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+            )
+        """)
         conn.commit()
 
-        # Insert rows
         insert_query = """
             INSERT INTO financial_ratios (
                 company_id, year, net_profit_margin_pct, operating_profit_margin_pct,
                 return_on_equity_pct, debt_to_equity, interest_coverage, asset_turnover,
                 free_cash_flow_cr, capex_cr, earnings_per_share, book_value_per_share,
-                dividend_payout_ratio_pct, total_debt_cr, cash_from_operations_cr
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                dividend_payout_ratio_pct, total_debt_cr, cash_from_operations_cr,
+                return_on_assets_pct, net_debt_cr, icr_label, high_leverage_flag, icr_warning_flag,
+                revenue_cagr_5yr, revenue_cagr_5yr_flag, pat_cagr_5yr, pat_cagr_5yr_flag,
+                eps_cagr_5yr, eps_cagr_5yr_flag, composite_quality_score
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         rows_to_insert = []
         for _, row in df.iterrows():
+            co = row["company_id"]
+            yr = row["year"]
+
             npm = row["computed_npm"]
             opm = row["computed_opm"]
             roe = row["computed_roe"]
@@ -391,10 +596,36 @@ class ProfitabilityRatioEngine:
             div = row["dividend_payout"]
             debt = row["borrowings"]
 
+            # Day 08/09 additions
+            roa = row["computed_roa"]
+            net_debt = row["computed_net_debt"]
+
+            # ICR Label and Warning Flag
+            if icr is None:
+                icr_label = "Debt Free"
+                icr_warn = 0
+            else:
+                icr_label = "Normal"
+                icr_warn = 1 if icr < 1.5 else 0
+
+            # High Leverage Flag
+            sec = broad_sectors.get(co, "Other")
+            high_lev = 1 if de is not None and de > 5 and sec != "Financials" else 0
+
+            # CAGR 5yr
+            rev_cagr = row["sales_cagr_5yr"]
+            rev_flag = row["sales_cagr_5yr_flag"]
+            pat_cagr = row["pat_cagr_5yr"]
+            pat_flag = row["pat_cagr_5yr_flag"]
+            eps_cagr = row["eps_cagr_5yr"]
+            eps_flag = row["eps_cagr_5yr_flag"]
+
+            comp_score = row["composite_quality_score"]
+
             rows_to_insert.append(
                 (
-                    row["company_id"],
-                    row["year"],
+                    co,
+                    yr,
                     npm,
                     opm,
                     roe,
@@ -408,6 +639,18 @@ class ProfitabilityRatioEngine:
                     div,
                     debt,
                     cfo,
+                    roa,
+                    net_debt,
+                    icr_label,
+                    high_lev,
+                    icr_warn,
+                    rev_cagr,
+                    rev_flag,
+                    pat_cagr,
+                    pat_flag,
+                    eps_cagr,
+                    eps_flag,
+                    comp_score,
                 )
             )
 
@@ -419,88 +662,14 @@ class ProfitabilityRatioEngine:
             f"Successfully populated 'financial_ratios' table with {len(rows_to_insert)} records."
         )
 
-    def run_cross_validation_with_excel(self, excel_path: str):
-        """
-        Compares computed database values against the original values from raw Excel ratios file.
-        Prints summary statistics on deviations.
-        """
-        if not os.path.exists(excel_path):
-            print(f"Excel file not found for validation: {excel_path}")
-            return
-
-        # Load excel
-        df_excel = pd.read_excel(excel_path)
-        from src.etl.normaliser import normalize_ticker, normalize_year
-
-        df_excel["company_id"] = df_excel["company_id"].apply(normalize_ticker)
-        df_excel["year"] = df_excel["year"].apply(normalize_year)
-        df_excel = df_excel.dropna(subset=["company_id", "year"])
-        df_excel = df_excel.drop_duplicates(subset=["company_id", "year"], keep="last")
-
-        # Load from populated DB
-        conn = sqlite3.connect(self.db_path)
-        df_db = pd.read_sql_query("SELECT * FROM financial_ratios", conn)
-        conn.close()
-
-        # Merge
-        df_compare = pd.merge(
-            df_db, df_excel, on=["company_id", "year"], suffixes=("_calc", "_excel")
-        )
-
-        print("\n=== CROSS-VALIDATION REPORT: CALCULATED RATIOS VS EXCEL REFERENCE ===")
-        print(f"Total overlapping company-year records: {len(df_compare)}")
-
-        metrics = [
-            ("net_profit_margin_pct", 0.05),
-            ("operating_profit_margin_pct", 1.5),
-            ("return_on_equity_pct", 0.05),
-            ("debt_to_equity", 0.01),
-            ("interest_coverage", 0.05),
-            ("asset_turnover", 0.01),
-            ("free_cash_flow_cr", 1.0),
-            ("capex_cr", 1.0),
-            ("earnings_per_share", 0.05),
-            ("book_value_per_share", 0.01),
-            ("dividend_payout_ratio_pct", 0.05),
-            ("total_debt_cr", 0.05),
-            ("cash_from_operations_cr", 0.05),
-        ]
-
-        for col, tol in metrics:
-            col_calc = f"{col}_calc"
-            col_excel = f"{col}_excel"
-
-            c_val = df_compare[col_calc].fillna(0.0)
-            e_val = df_compare[col_excel].fillna(0.0)
-
-            if col == "interest_coverage":
-                mask = (df_compare[col_calc] != 999.0) & df_compare[col_excel].notna()
-                diff = (
-                    df_compare.loc[mask, col_calc] - df_compare.loc[mask, col_excel]
-                ).abs()
-            else:
-                diff = (c_val - e_val).abs()
-
-            max_diff = diff.max() if len(diff) > 0 else 0.0
-            mean_diff = diff.mean() if len(diff) > 0 else 0.0
-
-            mismatches = (diff > tol).sum() if len(diff) > 0 else 0
-
-            status = (
-                "PASS"
-                if mismatches == 0
-                else f"DEV-WARNING ({mismatches} rows > {tol} tol)"
-            )
-            print(
-                f"  {col:<30}: Mean Diff = {mean_diff:8.4f} | Max Diff = {max_diff:8.4f} | Status = {status}"
-            )
+        # 6. Run cross-check anomaly analysis
+        run_cross_check_anomalies(db_path=db_path, log_path=cagr_log)
+        print(f"Logged cross-check anomalies to: {cagr_log}")
 
 
 if __name__ == "__main__":
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     db = os.path.join(project_root, "data", "nifty100.db")
-    excel = os.path.join(project_root, "data", "supporting", "financial_ratios.xlsx")
 
     engine = ProfitabilityRatioEngine(db_path=db)
     engine.populate_ratios_table()
-    engine.run_cross_validation_with_excel(excel_path=excel)

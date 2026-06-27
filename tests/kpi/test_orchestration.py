@@ -41,7 +41,7 @@ def test_database_populated_counts():
     cnt = cursor.fetchone()[0]
     conn.close()
 
-    assert cnt == 1041
+    assert cnt == 1155
 
 
 def test_sector_roce_notes_generated():

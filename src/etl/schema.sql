@@ -162,6 +162,23 @@ CREATE TABLE IF NOT EXISTS financial_ratios (
     dividend_payout_ratio_pct NUMERIC,
     total_debt_cr NUMERIC,
     cash_from_operations_cr NUMERIC,
+    
+    -- Sprint 2 Added Columns
+    return_on_assets_pct NUMERIC,
+    net_debt_cr NUMERIC,
+    icr_label VARCHAR,
+    high_leverage_flag INTEGER,
+    icr_warning_flag INTEGER,
+    
+    revenue_cagr_5yr NUMERIC,
+    revenue_cagr_5yr_flag VARCHAR,
+    pat_cagr_5yr NUMERIC,
+    pat_cagr_5yr_flag VARCHAR,
+    eps_cagr_5yr NUMERIC,
+    eps_cagr_5yr_flag VARCHAR,
+    
+    composite_quality_score NUMERIC,
+    
     PRIMARY KEY (company_id, year),
     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );

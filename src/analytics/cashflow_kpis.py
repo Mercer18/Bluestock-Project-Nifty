@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import pandas as pd
+import numpy as np
 
 
 def calculate_fcf(cfo: float, cfi: float) -> float | None:
@@ -12,13 +13,52 @@ def calculate_fcf(cfo: float, cfi: float) -> float | None:
     return float(cfo_val + cfi_val)
 
 
-def calculate_cfo_quality(cfo: float, net_profit: float) -> float | None:
-    """Calculates CFO Quality Score = CFO / Net Profit."""
+def calculate_cfo_quality_ratio(cfo: float, net_profit: float) -> float | None:
+    """Calculates single year CFO Quality ratio = CFO / Net Profit."""
     if net_profit is None or pd.isna(net_profit) or net_profit == 0:
         return None
     if cfo is None or pd.isna(cfo):
         return None
     return float(cfo / net_profit)
+
+
+def calculate_cfo_quality_5yr_avg(
+    df_company: pd.DataFrame, current_year: str
+) -> float | None:
+    """Calculates CFO / PAT ratio averaged over a 5-year window up to current_year."""
+    try:
+        parts = current_year.split("-")
+        curr_y = int(parts[0])
+        suffix = parts[1]
+    except Exception:
+        return None
+
+    years_window = [f"{curr_y - i:04d}-{suffix}" for i in range(5)]
+    df_window = df_company[df_company["year"].isin(years_window)]
+
+    ratios = []
+    for _, r in df_window.iterrows():
+        cfo = r["operating_activity"]
+        pat = r["net_profit"]
+        if pat is not None and not pd.isna(pat) and pat != 0:
+            if cfo is not None and not pd.isna(cfo):
+                ratios.append(cfo / pat)
+
+    if len(ratios) == 0:
+        return None
+    return float(np.mean(ratios))
+
+
+def classify_cfo_quality_label(avg_score: float | None) -> str | None:
+    """Classifies CFO Quality: >1.0 = High Quality, 0.5-1.0 = Moderate, <0.5 = Accrual Risk."""
+    if avg_score is None:
+        return None
+    if avg_score > 1.0:
+        return "High Quality"
+    elif avg_score >= 0.5:
+        return "Moderate"
+    else:
+        return "Accrual Risk"
 
 
 def calculate_capex_intensity(cfi: float, sales: float) -> float | None:
@@ -30,9 +70,21 @@ def calculate_capex_intensity(cfi: float, sales: float) -> float | None:
     return float(abs(cfi) / sales * 100)
 
 
+def classify_capex_intensity_label(intensity: float | None) -> str | None:
+    """Classifies CapEx Intensity: <3% = Asset Light, 3-8% = Moderate, >8% = Capital Intensive."""
+    if intensity is None:
+        return None
+    if intensity < 3.0:
+        return "Asset Light"
+    elif intensity <= 8.0:
+        return "Moderate"
+    else:
+        return "Capital Intensive"
+
+
 def calculate_fcf_conversion(fcf: float, op_profit: float) -> float | None:
     """Calculates FCF Conversion Rate = FCF / Operating Profit * 100."""
-    if op_profit is None or pd.isna(op_profit) or op_profit <= 0:
+    if op_profit is None or pd.isna(op_profit) or op_profit == 0:
         return None
     if fcf is None or pd.isna(fcf):
         return None
@@ -42,7 +94,7 @@ def calculate_fcf_conversion(fcf: float, op_profit: float) -> float | None:
 def classify_capital_allocation(
     cfo: float, cfi: float, cff: float, cfo_quality: float = None
 ) -> str:
-    """Classifies capital allocation strategy based on signs of CFO, CFI, CFF."""
+    """Classifies capital allocation strategy based on signs of CFO, CFI, CFF (updated for Sprint 2)."""
     cfo_val = cfo if cfo is not None and not pd.isna(cfo) else 0.0
     cfi_val = cfi if cfi is not None and not pd.isna(cfi) else 0.0
     cff_val = cff if cff is not None and not pd.isna(cff) else 0.0
@@ -57,22 +109,20 @@ def classify_capital_allocation(
         if cfo_quality is not None and cfo_quality > 1.0:
             return "Shareholder Returns"
         return "Reinvestor"
-    elif pattern == ("+", "-", "+"):
-        return "Growth / Expansion"
     elif pattern == ("+", "+", "-"):
-        return "Deleveraging / Divestment"
-    elif pattern == ("+", "+", "+"):
-        return "Capital Accumulation"
-    elif pattern == ("-", "-", "+"):
-        return "Start-up / Early Stage"
+        return "Liquidating Assets"
     elif pattern == ("-", "+", "+"):
         return "Distress Signal"
+    elif pattern == ("-", "-", "+"):
+        return "Growth Funded by Debt"
+    elif pattern == ("+", "+", "+"):
+        return "Cash Accumulator"
     elif pattern == ("-", "-", "-"):
-        return "Capital Depletion"
-    elif pattern == ("-", "+", "-"):
-        return "Contraction / Restructuring"
-
-    return "Other"
+        return "Pre-Revenue"
+    elif pattern == ("+", "-", "+"):
+        return "Mixed"
+    else:
+        return "Mixed"
 
 
 class CashFlowKPIEngine:
@@ -93,14 +143,13 @@ class CashFlowKPIEngine:
             conn,
         )
 
-        # Load P&L (include sales, operating_profit, net_profit)
-        # Note: We use computed OPM/operating profit or raw, here we use raw profitandloss table
+        # Load P&L
         df_pl = pd.read_sql_query(
             "SELECT company_id, year, sales, operating_profit, net_profit FROM profitandloss",
             conn,
         )
 
-        # Load Balance Sheet (include borrowings)
+        # Load Balance Sheet
         df_bs = pd.read_sql_query(
             "SELECT company_id, year, borrowings FROM balancesheet", conn
         )
@@ -113,29 +162,21 @@ class CashFlowKPIEngine:
         return df
 
     def compute_all_kpis(self) -> pd.DataFrame:
-        """Runs computations for FCF, quality score, capex intensity, conversion, allocation labels, and deleveraging/distress flags."""
+        """Runs computations for FCF, 5-year average quality score, capex intensity, conversion, and allocation labels."""
         df = self.load_raw_data()
 
-        # Build lookup table for borrowings to check deleveraging YoY
-        # (company_id, year) -> borrowings
-        borrowings_lookup = {}
-        for _, row in df.iterrows():
-            borrowings_lookup[(row["company_id"], row["year"])] = row["borrowings"]
-
-        def get_lookback_year(year_str: str) -> str | None:
-            try:
-                parts = year_str.split("-")
-                return f"{int(parts[0]) - 1:04d}-{parts[1]}"
-            except Exception:
-                return None
+        # Build company-specific dataframes lookup for rolling calculations
+        company_dfs = {
+            co: df[df["company_id"] == co].copy() for co in df["company_id"].unique()
+        }
 
         fcf_list = []
         cfo_q_list = []
+        cfo_q_label_list = []
         capex_int_list = []
+        capex_int_label_list = []
         fcf_conv_list = []
         alloc_list = []
-        deleveraging_list = []
-        distress_list = []
         cfo_sign_list = []
         cfi_sign_list = []
         cff_sign_list = []
@@ -152,68 +193,47 @@ class CashFlowKPIEngine:
             fcf = calculate_fcf(cfo, cfi)
             fcf_list.append(fcf)
 
-            # CFO Quality
-            cfo_q = calculate_cfo_quality(cfo, row["net_profit"])
-            cfo_q_list.append(cfo_q)
+            # 5-Year Average CFO Quality
+            cfo_q_avg = calculate_cfo_quality_5yr_avg(company_dfs[co], yr)
+            cfo_q_list.append(cfo_q_avg)
+            cfo_q_label_list.append(classify_cfo_quality_label(cfo_q_avg))
 
             # CapEx Intensity
             capex_int = calculate_capex_intensity(cfi, row["sales"])
             capex_int_list.append(capex_int)
+            capex_int_label_list.append(classify_capex_intensity_label(capex_int))
 
             # FCF Conversion
             fcf_conv = calculate_fcf_conversion(fcf, row["operating_profit"])
             fcf_conv_list.append(fcf_conv)
 
             # Allocation Label
-            label = classify_capital_allocation(cfo, cfi, cff, cfo_q)
+            label = classify_capital_allocation(cfo, cfi, cff, cfo_q_avg)
             alloc_list.append(label)
 
-            # CFF signs for CSV
             cfo_sign_list.append("+" if (cfo or 0.0) > 0 else "-")
             cfi_sign_list.append("+" if (cfi or 0.0) > 0 else "-")
             cff_sign_list.append("+" if (cff or 0.0) > 0 else "-")
 
-            # Deleveraging Flag
-            # CFF < 0 AND borrowings declining YoY
-            prev_yr = get_lookback_year(yr)
-            is_deleveraging = 0
-            if cff is not None and cff < 0:
-                curr_borrowings = row["borrowings"]
-                prev_borrowings = borrowings_lookup.get((co, prev_yr))
-                if (
-                    prev_borrowings is not None
-                    and curr_borrowings is not None
-                    and curr_borrowings < prev_borrowings
-                ):
-                    is_deleveraging = 1
-            deleveraging_list.append(is_deleveraging)
-
-            # Distress Flag
-            # CFO < 0 and CFF > 0
-            is_distress = 0
-            if cfo is not None and cfo < 0 and cff is not None and cff > 0:
-                is_distress = 1
-            distress_list.append(is_distress)
-
         df["fcf"] = fcf_list
-        df["cfo_quality"] = cfo_q_list
+        df["cfo_quality_avg"] = cfo_q_list
+        df["cfo_quality_label"] = cfo_q_label_list
         df["capex_intensity"] = capex_int_list
+        df["capex_intensity_label"] = capex_int_label_list
         df["fcf_conversion"] = fcf_conv_list
         df["pattern_label"] = alloc_list
         df["cfo_sign"] = cfo_sign_list
         df["cfi_sign"] = cfi_sign_list
         df["cff_sign"] = cff_sign_list
-        df["deleveraging_flag"] = deleveraging_list
-        df["distress_flag"] = distress_list
 
         return df
 
     def save_deliverables(self):
-        """Generates CSV files and populates database capital_allocation table."""
+        """Generates CSV files in the output directory."""
         df_results = self.compute_all_kpis()
         os.makedirs(self.output_dir, exist_ok=True)
 
-        # 1. Save capital_allocation.csv
+        # Save output/capital_allocation.csv
         alloc_path = os.path.join(self.output_dir, "capital_allocation.csv")
         df_alloc_csv = df_results[
             ["company_id", "year", "cfo_sign", "cfi_sign", "cff_sign", "pattern_label"]
@@ -228,91 +248,11 @@ class CashFlowKPIEngine:
         df_alloc_csv.to_csv(alloc_path, index=False)
         print(f"Saved Capital Allocation deliverables to: {alloc_path}")
 
-        # 2. Save cashflow_intelligence.csv (containing full cash flow KPIs)
-        cf_intel_path = os.path.join(self.output_dir, "cashflow_intelligence.csv")
-        df_intel_csv = df_results[
-            [
-                "company_id",
-                "year",
-                "operating_activity",
-                "investing_activity",
-                "financing_activity",
-                "fcf",
-                "cfo_quality",
-                "capex_intensity",
-                "fcf_conversion",
-                "pattern_label",
-                "deleveraging_flag",
-                "distress_flag",
-            ]
-        ].copy()
-        df_intel_csv.to_csv(cf_intel_path, index=False)
-        print(f"Saved Cash Flow Intelligence KPIs to: {cf_intel_path}")
-
-        # 3. Populate capital_allocation table in nifty100.db
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        # Create table if not exists
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS capital_allocation (
-                company_id VARCHAR,
-                year VARCHAR,
-                cfo_sign VARCHAR,
-                cfi_sign VARCHAR,
-                cff_sign VARCHAR,
-                pattern_label VARCHAR,
-                PRIMARY KEY (company_id, year),
-                FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
-            )
-        """)
-        conn.commit()
-
-        # Insert/Replace records
-        cursor.execute("DELETE FROM capital_allocation")
-        for _, row in df_alloc_csv.iterrows():
-            cursor.execute(
-                "INSERT INTO capital_allocation (company_id, year, cfo_sign, cfi_sign, cff_sign, pattern_label) VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    row["company_id"],
-                    row["year"],
-                    row["CFO_sign"],
-                    row["CFI_sign"],
-                    row["CFF_sign"],
-                    row["pattern_label"],
-                ),
-            )
-        conn.commit()
-        conn.close()
-        print("Successfully updated database table 'capital_allocation'.")
-
-    def print_summary_report(self):
-        """Runs calculations and prints count summary."""
-        df_results = self.compute_all_kpis()
-        print("\n=== SPRINT 2: CASH FLOW KPI ENGINE VALIDATION ===")
-        print(f"Total company-year combinations evaluated: {len(df_results)}")
-        print(f"Calculated FCF count: {df_results['fcf'].notna().sum()}")
-        print(
-            f"Calculated CFO Quality count: {df_results['cfo_quality'].notna().sum()}"
-        )
-        print(
-            f"Calculated CapEx Intensity count: {df_results['capex_intensity'].notna().sum()}"
-        )
-        print(
-            f"Calculated FCF Conversion count: {df_results['fcf_conversion'].notna().sum()}"
-        )
-        print(f"Flagged for Deleveraging: {df_results['deleveraging_flag'].sum()}")
-        print(f"Flagged for Distress: {df_results['distress_flag'].sum()}")
-
-        print("\nCapital Allocation Distribution:")
-        print(df_results["pattern_label"].value_counts().to_string())
-
 
 if __name__ == "__main__":
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     db = os.path.join(project_root, "data", "nifty100.db")
-    out_dir = os.path.join(project_root, "data")
+    out_dir = os.path.join(project_root, "output")
 
     engine = CashFlowKPIEngine(db_path=db, output_dir=out_dir)
     engine.save_deliverables()
-    engine.print_summary_report()

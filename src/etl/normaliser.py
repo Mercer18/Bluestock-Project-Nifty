@@ -1,11 +1,31 @@
 import re
 
 MONTH_MAP = {
-    "jan": "01", "feb": "02", "mar": "03", "apr": "04", "may": "05", "jun": "06",
-    "jul": "07", "aug": "08", "sep": "09", "oct": "10", "nov": "11", "dec": "12",
-    "january": "01", "february": "02", "march": "03", "april": "04", "june": "06",
-    "july": "07", "august": "08", "september": "09", "october": "10", "november": "11", "december": "12"
+    "jan": "01",
+    "feb": "02",
+    "mar": "03",
+    "apr": "04",
+    "may": "05",
+    "jun": "06",
+    "jul": "07",
+    "aug": "08",
+    "sep": "09",
+    "oct": "10",
+    "nov": "11",
+    "dec": "12",
+    "january": "01",
+    "february": "02",
+    "march": "03",
+    "april": "04",
+    "june": "06",
+    "july": "07",
+    "august": "08",
+    "september": "09",
+    "october": "10",
+    "november": "11",
+    "december": "12",
 }
+
 
 def normalize_ticker(ticker: str) -> str:
     """
@@ -15,6 +35,7 @@ def normalize_ticker(ticker: str) -> str:
         ticker = str(ticker)
     return ticker.strip().upper()
 
+
 def normalize_year(year_val) -> str:
     """
     Normalises diverse year formats into YYYY-MM.
@@ -22,7 +43,7 @@ def normalize_year(year_val) -> str:
     """
     if year_val is None:
         return "PARSE_ERROR"
-        
+
     # Convert to string and clean
     val_str = str(year_val).strip()
     if not val_str:
@@ -51,18 +72,18 @@ def normalize_year(year_val) -> str:
     if month_yr_match:
         m_name = month_yr_match.group(1).lower()
         yr_part = month_yr_match.group(2)
-        
+
         # Resolve month
         m_num = MONTH_MAP.get(m_name)
         if not m_num:
             return "PARSE_ERROR"
-            
+
         # Resolve year
         if len(yr_part) == 2:
             yr_part = "20" + yr_part
         elif len(yr_part) != 4:
             return "PARSE_ERROR"
-            
+
         return f"{yr_part}-{m_num}"
 
     # Pattern 5: Year and Month in other order or style (e.g. 2023-Mar)
