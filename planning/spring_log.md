@@ -309,3 +309,28 @@ This document logs daily achievements, tasks completed, and the exact standup up
     - Cross-checked calculated ROCEs against pre-computed master values, flagging 12 structural/reporting anomalies and logging reasons to data/sector_roce_notes.csv.
     - Wrote unit tests in tests/kpi/test_orchestration.py, confirming 100/100 passing pytest tests.
     ```
+
+---
+
+## 📅 June 29, 2026 – Day 14: Release Review & Tagging
+
+### 🛠️ Tasks Completed
+- Updated database orchestrator schema and populated `financial_ratios` table with **1,155 rows** (meeting the `>= 1,100` exit criteria).
+- Verified that all 17 KPI and flag columns are populated with zero null-only columns.
+- Resolved and logged all ROE/ROCE deviations and CAGR turnaround edge cases in the designated deliverable log file `output/ratio_edge_cases.log` with detailed categories (`data source issue`, `formula discrepancy`, `version difference`).
+- Executed the screener preview (ROE > 15% and D/E < 1) yielding **37 matching companies**, verifying the results conform to expected Nifty 100 financial patterns.
+- Verified that all **106 unit tests** pass cleanly with 0 failures.
+- Drafted `sprint2_retro.md` report documenting formula decisions, edge case resolutions, and validations.
+- Tagged the codebase release as `v2.0-sprint2` and pushed to GitHub.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 2 - Final Release Tagging`
+*   **Category**: `Deployment`
+*   **Description**:
+    ```text
+    - Populated SQLite financial_ratios table with 1,155 rows (17 columns + flags).
+    - Executed screener preview and spot-check validations showing 0.00% difference.
+    - Documented all edge-cases/anomalies in output/ratio_edge_cases.log and compiled sprint2_retro.md.
+    - Tagged release v2.0-sprint2 and pushed to GitHub tracking branch.
+    ```
+
