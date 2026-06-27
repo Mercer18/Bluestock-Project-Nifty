@@ -8,6 +8,9 @@ load:
 test:
 	pytest tests/
 
+ratios:
+	python src/analytics/ratios.py
+
 clean:
 	if exist src\etl\__pycache__ rmdir /s /q src\etl\__pycache__
 	if exist tests\etl\__pycache__ rmdir /s /q tests\etl\__pycache__

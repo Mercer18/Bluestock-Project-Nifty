@@ -237,3 +237,31 @@ This document logs daily achievements, tasks completed, and the exact standup up
     - Wrote 4 unit test cases in tests/kpi/test_cagr.py verifying calculations, null lookbacks, and log write operations.
     - Executed the entire pytest suite, achieving 100% success rate across all 87 tests.
     ```
+
+---
+
+## 📅 June 26, 2026 – Day 11: Cash Flow KPI Engine & Capital Allocation Matrix
+
+### 🛠️ Tasks Completed
+- Implemented the cash flow calculation module in `src/analytics/cashflow_kpis.py` covering:
+  - Free Cash Flow (FCF) = CFO + CFI.
+  - CFO Quality Score = CFO / Net Profit.
+  - CapEx Intensity = abs(CFI) / Sales * 100.
+  - FCF Conversion Rate = FCF / Operating Profit * 100.
+- Programmed capital allocation classification logic based on the sign combinations of CFO, CFI, and CFF, mapping to 8 structural business states (e.g. Shareholder Returns, Reinvestor, Growth/Expansion, Deleveraging/Divestment, Capital Accumulation, Start-up, Distress Signal, Capital Depletion, Contraction/Restructuring).
+- Added YoY deleveraging checks (declining debt combined with negative CFF) and distress flags (negative CFO with positive CFF).
+- Generated two CSV deliverables (`data/capital_allocation.csv` and `data/cashflow_intelligence.csv`) and successfully created and populated the `capital_allocation` SQLite table.
+- Created `tests/kpi/test_cashflow.py` with 9 detailed unit tests validating calculations, classification boundaries, and YoY flag transitions.
+- Executed the full test suite, bringing the total passing pytest unit tests to 96 (100% success rate).
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 2 - Cash Flow KPI Engine & Capital Allocation Matrix`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Implemented Cash Flow KPIs (FCF, CFO Quality, CapEx Intensity, FCF Conversion, deleveraging/distress flags) inside src/analytics/cashflow_kpis.py.
+    - Designed and implemented the 8-class Capital Allocation pattern classification matrix based on sign combinations of CFO, CFI, and CFF.
+    - Generated data/capital_allocation.csv, data/cashflow_intelligence.csv, and populated the SQLite table 'capital_allocation'.
+    - Wrote 9 unit tests in tests/kpi/test_cashflow.py, verifying calculations and flag logic.
+    - Executed the full test suite, confirming 96/96 passing tests (100% green).
+    ```
