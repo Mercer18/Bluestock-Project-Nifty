@@ -265,3 +265,47 @@ This document logs daily achievements, tasks completed, and the exact standup up
     - Wrote 9 unit tests in tests/kpi/test_cashflow.py, verifying calculations and flag logic.
     - Executed the full test suite, confirming 96/96 passing tests (100% green).
     ```
+
+---
+
+## 📅 June 27, 2026 – Day 12: KPI Ratio Database Orchestration & Validation
+
+### 🛠️ Tasks Completed
+- Updated `src/analytics/ratios.py` to calculate all 13 financial ratios (profitability, leverage, efficiency, cash flow, and valuation) for all 92 valid companies across all 14 years.
+- Implemented an Excel-matching Book Value Per Share formula `(equity + reserves) / (10 * equity_capital)` to ensure 100% alignment with manual Excel reference points.
+- Populated the SQLite database table `financial_ratios` with 1,041 records.
+- Added the `ratios` target to the `Makefile` to trigger `python src/analytics/ratios.py`.
+- Conducted a robust cross-validation routine comparing our computed ratios in SQLite against the raw `data/supporting/financial_ratios.xlsx` reference sheet.
+- Verified that all core ratios match with near-zero deviations (max difference on BVPS is 0.0001) except for OPM and ICR in shifted companies (e.g. Cipla, IndiGo) which were successfully corrected by our auto-healer.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 2 - KPI Ratio Database Orchestration & Validation`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Updated src/analytics/ratios.py to compute all 13 core KPIs and populated the SQLite database table 'financial_ratios' with 1,041 records.
+    - Implemented the Excel-matching Book Value Per Share formula and added a 'ratios' target in the Makefile.
+    - Completed a cross-validation script comparing database records to raw Excel ratios, confirming perfect matches (e.g. BVPS max diff 0.0001) except for expected healed column-shift cases.
+    ```
+
+---
+
+## 📅 June 28, 2026 – Day 13: Sector-Relative ROCE & Anomaly Logging
+
+### 🛠️ Tasks Completed
+- Implemented the sector-relative ROCE analysis module in `src/analytics/sector_roce.py` for all 22 financial sector firms (banks, NBFCs, insurers, speciality financiers).
+- Calculated standard ROCE (`EBIT / Capital Employed * 100`) and computed median ROCEs per sub-sector (e.g. Private Banks: 5.64%, Public Sector Banks: 3.33%, Speciality Finance: 9.30%, Consumer Finance: 5.22%).
+- Cross-checked calculated latest ROCE against the pre-computed `roce_percentage` in the companies master index.
+- Identified 12 major anomalies, including PNB's distorted ROCE of 118.22% caused by deposits not being classified under borrowings in the raw Balance Sheet dataset.
+- Exported the complete analysis and anomaly reasons to the deliverable file `data/sector_roce_notes.csv`.
+- Created `tests/kpi/test_orchestration.py` to test the orchestrator and sector ROCE math, bringing the test suite to 100 passing unit tests (100% green).
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 2 - Sector-Relative ROCE & Anomaly Logging`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Created src/analytics/sector_roce.py to calculate sector-relative ROCEs and sub-sector medians for 22 financial firms.
+    - Cross-checked calculated ROCEs against pre-computed master values, flagging 12 structural/reporting anomalies and logging reasons to data/sector_roce_notes.csv.
+    - Wrote unit tests in tests/kpi/test_orchestration.py, confirming 100/100 passing pytest tests.
+    ```
