@@ -13,5 +13,7 @@ ratios:
 
 clean:
 	if exist src\etl\__pycache__ rmdir /s /q src\etl\__pycache__
+	if exist src\analytics\__pycache__ rmdir /s /q src\analytics\__pycache__
 	if exist tests\etl\__pycache__ rmdir /s /q tests\etl\__pycache__
+	if exist tests\kpi\__pycache__ rmdir /s /q tests\kpi\__pycache__
 	if exist .pytest_cache rmdir /s /q .pytest_cache
