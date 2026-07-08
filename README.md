@@ -27,6 +27,7 @@ This repository houses the production-grade data foundation, ETL ingestion pipel
 - **Screener Output**: Generates `output/screener_output.xlsx` containing 6 sheets, color-coded with green/red cells for active thresholds.
 - **Peer Percentile Engine**: Computes percentiles (using Excel-matching `PERCENTRANK.INC` logic) for 10 metrics across all 11 peer groups, populating the SQLite `peer_percentiles` table (with D/E rankings inverted and non-mapped fallbacks).
 - **Polar Radar Charts**: Generates customized Matplotlib radar/polar plots for all companies across 8 dimensions (ROE, ROCE, NPM, D/E, FCF, CAGR, Composite Score) with reference overlays (peer group average or Nifty 100 average).
+- **Peer Comparison Excel Report**: Generates `output/peer_comparison.xlsx` with 11 worksheets (one per peer group) containing 20 metrics and 10 percentile ranks, styled with conditional formatting (green/yellow/red), gold benchmark highlights, and peer group medians.
 
 ---
 
