@@ -11,6 +11,14 @@ def load_screener_config(config_path: str) -> dict:
         config = yaml.safe_load(f)
     return config.get("thresholds", {}) if config else {}
 
+def load_screener_presets(config_path: str) -> dict:
+    """Loads preset screener configurations from config/screener_config.yaml."""
+    if not os.path.exists(config_path):
+        return {}
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+    return config.get("presets", {}) if config else {}
+
 class ScreenerEngine:
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -25,19 +33,12 @@ class ScreenerEngine:
         # Load ratios
         df_ratios = pd.read_sql_query("SELECT * FROM financial_ratios", conn)
         
-        # Extract integer year (e.g. '2024-03' -> 2024) to join with market_cap
-        df_ratios["year_int"] = pd.to_numeric(
-            df_ratios["year"].apply(lambda y: y.split("-")[0] if y and "-" in y else None),
-            errors="coerce"
-        )
-        
         # Load market cap
         df_mc = pd.read_sql_query(
-            "SELECT company_id, year as year_int, market_cap_crore, enterprise_value_crore, "
+            "SELECT company_id, year, market_cap_crore, enterprise_value_crore, "
             "pe_ratio, pb_ratio, ev_ebitda, dividend_yield_pct FROM market_cap", 
             conn
         )
-        df_mc["year_int"] = pd.to_numeric(df_mc["year_int"], errors="coerce")
         
         # Load profit and loss (for sales and net profit)
         df_pl = pd.read_sql_query(
@@ -57,13 +58,33 @@ class ScreenerEngine:
         
         # Merge datasets
         df = pd.merge(df_ratios, df_sec, on="company_id", how="left")
-        df = pd.merge(df, df_mc, on=["company_id", "year_int"], how="left")
+        df = pd.merge(df, df_mc, on=["company_id", "year"], how="left")
         df = pd.merge(df, df_pl, on=["company_id", "year"], how="left")
+        
+        # Load CAGR data to get sales_cagr_3yr (3-year Revenue CAGR)
+        from src.analytics.cagr import CAGRCalculationEngine
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        cagr_log = os.path.join(project_root, "output", "ratio_edge_cases.log")
+        
+        cagr_engine = CAGRCalculationEngine(db_path=self.db_path, log_path=cagr_log)
+        df_cagr = cagr_engine.run_cagr_pipeline()
+        
+        # Select CAGR columns to merge
+        df_cagr_sel = df_cagr[["company_id", "year", "sales_cagr_3yr"]].copy()
+        df = pd.merge(df, df_cagr_sel, on=["company_id", "year"], how="left")
+        
+        # Compute de_declining_yoy
+        df = df.sort_values(by=["company_id", "year"])
+        df["prev_de"] = df.groupby("company_id")["debt_to_equity"].shift(1)
+        df["de_declining_yoy"] = df.apply(
+            lambda r: r["debt_to_equity"] < r["prev_de"] if r["debt_to_equity"] is not None and not pd.isna(r["debt_to_equity"]) and r["prev_de"] is not None and not pd.isna(r["prev_de"]) else False,
+            axis=1
+        )
         
         return df
 
     def apply_filters(self, df: pd.DataFrame, thresholds: dict) -> pd.DataFrame:
-        """Applies filters to the DataFrame based on specified thresholds (Day 15 logic)."""
+        """Applies filters to the DataFrame based on specified thresholds (Day 15 & 16 logic)."""
         filtered_df = df.copy()
         
         filter_rules = [
@@ -81,18 +102,27 @@ class ScreenerEngine:
             ("net_profit_min", ">=", "net_profit"),
             ("eps_cagr_min", ">=", "eps_cagr_5yr"),
             ("asset_turnover_min", ">=", "asset_turnover"),
-            ("sales_min", ">=", "sales")
+            ("sales_min", ">=", "sales"),
+            # Day 16 additions
+            ("dividend_payout_max", "<=", "dividend_payout_ratio_pct"),
+            ("revenue_cagr_3yr_min", ">=", "sales_cagr_3yr"),
+            ("de_declining_yoy", "==", "de_declining_yoy")
         ]
         
         for key, op, col in filter_rules:
             val = thresholds.get(key)
             if val is None or pd.isna(val):
                 continue
+            
+            if key == "de_declining_yoy":
+                if val is True:
+                    filtered_df = filtered_df[filtered_df["de_declining_yoy"] == True]
+                continue
                 
             val = float(val)
             
             if key == "de_max":
-                # D/E filter: skip companies in Financials broad sector
+                # D/E filter: automatically skip companies in Financials broad sector
                 mask = (filtered_df["broad_sector"] == "Financials") | \
                        (filtered_df[col].isna()) | \
                        (filtered_df[col] <= val)
@@ -115,6 +145,16 @@ class ScreenerEngine:
             
         return filtered_df
 
+    def run_preset(self, df_base: pd.DataFrame, preset_name: str, config_path: str, year: str = "2024-03") -> pd.DataFrame:
+        """Loads thresholds for a preset and runs the filters on the base dataset for a specific year."""
+        presets = load_screener_presets(config_path)
+        thresholds = presets.get(preset_name, {})
+        
+        # Filter base data for target year
+        df_yr = df_base[df_base["year"] == year].copy()
+        
+        return self.apply_filters(df_yr, thresholds)
+
 if __name__ == "__main__":
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     db = os.path.join(project_root, "data", "nifty100.db")
@@ -124,6 +164,8 @@ if __name__ == "__main__":
     df_base = engine.load_base_data()
     print(f"Loaded base screener data: {len(df_base)} rows.")
     
-    thresholds = load_screener_config(cfg)
-    df_filtered = engine.apply_filters(df_base, thresholds)
-    print(f"Filtered screener data: {len(df_filtered)} rows.")
+    presets = load_screener_presets(cfg)
+    print("\nPreset Screener Test Results (Latest Year 2024-03):")
+    for name in presets.keys():
+        df_res = engine.run_preset(df_base, name, cfg, year="2024-03")
+        print(f"  Preset: {name:<25} -> {len(df_res)} matching companies.")
