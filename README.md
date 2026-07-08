@@ -20,6 +20,12 @@ This repository houses the production-grade data foundation, ETL ingestion pipel
 - **Automated Column-Shift Auto-Healer**: Dynamically detects and heals **88 shifted records** in raw spreadsheet loads on the fly.
 - **Cross-Validation Anomaly Log**: Compares computed values against master pre-computed indices, logging and categorizing deviations ($>5\%$) into `output/ratio_edge_cases.log` (categories: `data source issue`, `formula discrepancy`, `version difference`).
 
+### Sprint 3: Screener & Peer Comparison Engine (In Progress)
+- **Dynamic Filter Engine**: Filters companies dynamically across 15 financial metrics based on analyst-defined thresholds in `config/screener_config.yaml`.
+- **6 Preset Screeners**: Implements and validates Quality Compounder, Value Pick, Growth Accelerator, Dividend Champion, Debt-Free Blue Chip, and Turnaround Watch presets.
+- **Winsorised Sector-Relative Quality Rating**: Calculates per-sector relative composite ratings (Profitability 35%, Cash Quality 30%, Growth 20%, Leverage 15%).
+- **Screener Output**: Generates `output/screener_output.xlsx` containing 6 sheets, color-coded with green/red cells for active thresholds.
+
 ---
 
 ## 📁 Repository Structure
@@ -113,6 +119,14 @@ make ratios
 This updates `data/nifty100.db` and writes:
 - `output/capital_allocation.csv` (Capital Allocation patterns)
 - `output/ratio_edge_cases.log` (All anomalies and CAGR turnaround flags)
+
+### Run Preset Screeners & Exports (Sprint 3)
+To execute filters, calculate composite scores, and export `output/screener_output.xlsx`:
+```bash
+python src/screener/engine.py
+# Or using the Makefile:
+make screener
+```
 
 ### Run Unit Tests
 To execute all 106 unit and integration tests:
