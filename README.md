@@ -26,6 +26,7 @@ This repository houses the production-grade data foundation, ETL ingestion pipel
 - **Winsorised Sector-Relative Quality Rating**: Calculates per-sector relative composite ratings (Profitability 35%, Cash Quality 30%, Growth 20%, Leverage 15%).
 - **Screener Output**: Generates `output/screener_output.xlsx` containing 6 sheets, color-coded with green/red cells for active thresholds.
 - **Peer Percentile Engine**: Computes percentiles (using Excel-matching `PERCENTRANK.INC` logic) for 10 metrics across all 11 peer groups, populating the SQLite `peer_percentiles` table (with D/E rankings inverted and non-mapped fallbacks).
+- **Polar Radar Charts**: Generates customized Matplotlib radar/polar plots for all companies across 8 dimensions (ROE, ROCE, NPM, D/E, FCF, CAGR, Composite Score) with reference overlays (peer group average or Nifty 100 average).
 
 ---
 
@@ -135,6 +136,14 @@ To compute and populate peer percentiles in SQLite:
 python src/analytics/peer.py
 # Or using the Makefile:
 make peer
+```
+
+### Generate Polar Radar Charts (Sprint 3)
+To generate the 8-axis company radar charts with peer group overlays:
+```bash
+python src/analytics/radar.py
+# Or using the Makefile:
+make radar
 ```
 
 ### Run Unit Tests
