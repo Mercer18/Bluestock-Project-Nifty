@@ -334,3 +334,134 @@ This document logs daily achievements, tasks completed, and the exact standup up
     - Tagged release v2.0-sprint2 and pushed to GitHub tracking branch.
     ```
 
+---
+
+## 📅 July 5, 2026 – Day 15 & 16: Screener Engine & Presets
+
+### 🛠️ Tasks Completed
+- Created the config file `config/screener_config.yaml` to make filter thresholds analyst-editable.
+- Developed the filter engine `src/screener/engine.py` using Pandas to join ratios, market cap, and profit/loss statements.
+- Supported 15 custom financial filters, including D/E Financials sector bypass and ICR "Debt Free" labels as infinity.
+- Coded and validated the 6 preset screeners (Quality Compounder, Value Pick, Growth Accelerator, Dividend Champion, Debt-Free Blue Chip, and Turnaround Watch) on the Nifty 100 universe, ensuring each returns between 5 and 50 companies.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 3 - Days 15 & 16: Screener Filter Engine & Preset Implementation`
+*   **Category**: `Backend Development`
+*   **Description**:
+    ```text
+    - Created the editable config file in config/screener_config.yaml to store all filter thresholds.
+    - Developed the core filter engine in src/screener/engine.py to load YAML rules and apply Pandas-based filters on the financial_ratios database.
+    - Implemented 6 preset screeners (Quality Compounder, Value Pick, Growth Accelerator, Dividend Champion, Debt-Free Blue Chip, and Turnaround Watch).
+    - Verified filter engine rules, including skipping D/E filters for Financials and treating 'Debt Free' ICR as infinity.
+    - Tested presets on the 92-company database to confirm each returns between 5 and 50 companies.
+    ```
+
+---
+
+## 📅 July 6, 2026 – Day 17: Winsorised Composite Scores & Excel Export
+
+### 🛠️ Tasks Completed
+- Implemented the relative Composite Quality Score (0–100 scale) based on 35% Profitability, 30% Cash Quality, 20% Growth, and 15% Leverage.
+- Coded linear interpolation curves for absolute D/E and ICR scoring.
+- Implemented P10/P90 winsorisation and scaling relative to sector peers within each `broad_sector`.
+- Exported the results to `output/screener_output.xlsx` containing 6 worksheets (one per preset) with 20 KPI columns, formatted with light green and light red fills for active thresholds.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 3 - Day 17: Composite Quality Score & Excel Export Implementation`
+*   **Category**: `Backend Development`
+*   **Description**:
+    ```text
+    - Implemented the updated composite quality score engine using the required weights (35% Profitability, 30% Cash Quality, 20% Growth, 15% Leverage).
+    - Integrated P10/P90 winsorisation and broad_sector normalisation so company ratings reflect performance vs. sector peers.
+    - Coded D/E and ICR scoring interpolation curves (e.g. D/E 0=100, >5=0; ICR >10=100, <1.5=0).
+    - Generated output/screener_output.xlsx containing 6 sheets (one per preset) with 20 KPI columns, formatted with cell color fills (light green for passing thresholds, light red for failing).
+    ```
+
+---
+
+## 📅 July 7, 2026 – Day 18: Peer Percentiles & SQLite Integration
+
+### 🛠️ Tasks Completed
+- Modified `src/etl/schema.sql` to define the schema for the new database table `peer_percentiles`.
+- Created `src/analytics/peer.py` to load `peer_groups.xlsx` and compute peer-relative percentiles for 10 metrics across all 11 peer groups.
+- Implemented Excel-matching `PERCENTRANK.INC` math and inverted D/E rankings so that lower leverage has a higher percentile rank.
+- Populated the `peer_percentiles` SQLite table with 7,060 computed records.
+- Handled companies with no mapped peer group gracefully by returning `"No peer group assigned"` fallbacks.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 3 - Day 18: Peer Percentile Rankings & SQLite Integration`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Developed src/analytics/peer.py to load peer_groups.xlsx and calculate peer-relative percentiles for 10 core metrics within each of the 11 peer groups.
+    - Implemented Excel-matching PERCENTRANK.INC logic and successfully inverted the percentile rank for Debt-to-Equity (D/E) so lower leverage ranks higher.
+    - Populated the peer_percentiles SQLite table with company-year percentiles.
+    - Handled companies not mapped to any peer group with clean 'No peer group assigned' fallbacks without raising errors.
+    ```
+
+---
+
+## 📅 July 8, 2026 – Day 19: Polar Radar Charts
+
+### 🛠️ Tasks Completed
+- Developed a visualization engine in `src/analytics/radar.py` to generate 8-axis polar radar charts.
+- Scaled and normalized axes values (ROE, ROCE, NPM, D/E, FCF Score, PAT CAGR, Revenue CAGR, and Composite Score) to a unified 0–100 scale.
+- Plotted filled company polygons mapped against dashed red outlines representing peer group averages.
+- Rendered standalone charts comparing against the Nifty 100 average for companies with no mapped peer groups.
+- Batch exported **91 PNG charts** to `reports/radar_charts/` with naming format `{company_id}_radar.png`.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 3 - Day 19: Polar Radar Charts Generation`
+*   **Category**: `Data Visualisation`
+*   **Description**:
+    ```text
+    - Developed a visualization script to generate polar radar charts with 8 distinct axes (ROE, ROCE, NPM, D/E, FCF score, PAT CAGR 5yr, Revenue CAGR 5yr, and Composite Score).
+    - Coded chart rendering overlays: a filled polygon for individual company metrics mapped against a dashed outline representing the peer group average.
+    - Generated standalone reference charts using the Nifty 100 average for companies with no assigned peer groups.
+    - Exported all polar charts as PNG files to reports/radar_charts/.
+    ```
+
+---
+
+## 📅 July 9, 2026 – Day 20: Peer Comparison Excel Report
+
+### 🛠️ Tasks Completed
+- Developed the comparison report generator in `src/analytics/peer.py`.
+- Compiled `output/peer_comparison.xlsx` containing **11 worksheets** (one for each of the 11 peer groups).
+- Exported 20 financial metrics and 10 percentile rank columns for all constituent companies.
+- Added conditional formatting to color-code percentile cells (green for $\ge 75$th, yellow for $25\text{th}\dots 75\text{th}$, red for $\le 25$th percentile).
+- Highlighted benchmark rows in soft gold (`#FFE599`) and appended bolded median summary rows at the bottom of each sheet.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 3 - Day 20: Peer Comparison Excel Report Exporter`
+*   **Category**: `Data Analysis`
+*   **Description**:
+    ```text
+    - Developed the comparison report generator module to output peer comparison spreadsheets.
+    - Compiled output/peer_comparison.xlsx containing 11 worksheets, exporting 20 financial metrics and 10 percentile rank columns per company.
+    - Integrated conditional cell formatting for percentiles (green/yellow/red), highlighted benchmark rows in gold, and calculated median values for summary rows.
+    ```
+
+---
+
+## 📅 July 10, 2026 – Day 21: Release Review & Tagging
+
+### 🛠️ Tasks Completed
+- Created new unit and integration tests in `tests/kpi/test_screener.py` and `tests/kpi/test_peer.py` validating screener filters, presets, percent ranks, and database insertions.
+- Executed the full test suite verifying that all **114 unit tests** pass cleanly with 0 failures (100% green).
+- Generated and audited all required deliverables (`screener_output.xlsx`, `peer_comparison.xlsx`, `reports/radar_charts/`).
+- Compiled the final `sprint3_retro.md` retrospective report.
+- Staged, committed, and pushed final code and documentation, and tagged the release as `v3.0-sprint3` on GitHub.
+
+### 🗣️ Daily Standup Submitted
+*   **Title**: `Sprint 3 - Day 21: Final Verification & Release Tagging`
+*   **Category**: `Deployment`
+*   **Description**:
+    ```text
+    - Added unit test suites in tests/kpi/test_screener.py and test_peer.py, bringing the test suite to 114 passing tests (100% green).
+    - Audited all Excel exports and radar chart outputs, confirming zero data or formula discrepancies.
+    - Compiled final retrospective sprint3_retro.md and updated sprint logs.
+    - Tagged release v3.0-sprint3 on the repository tracking branch.
+    ```
+
+

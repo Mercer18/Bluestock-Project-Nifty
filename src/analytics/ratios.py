@@ -601,7 +601,7 @@ class ProfitabilityRatioEngine:
             net_debt = row["computed_net_debt"]
 
             # ICR Label and Warning Flag
-            if icr is None:
+            if icr is None or pd.isna(icr):
                 icr_label = "Debt Free"
                 icr_warn = 0
             else:
