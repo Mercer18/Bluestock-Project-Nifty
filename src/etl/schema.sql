@@ -182,3 +182,15 @@ CREATE TABLE IF NOT EXISTS financial_ratios (
     PRIMARY KEY (company_id, year),
     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
+
+-- 13. Peer Percentiles Table
+CREATE TABLE IF NOT EXISTS peer_percentiles (
+    company_id VARCHAR,
+    peer_group_name VARCHAR,
+    metric VARCHAR,
+    value NUMERIC,
+    percentile_rank NUMERIC,
+    year VARCHAR,
+    PRIMARY KEY (company_id, peer_group_name, metric, year),
+    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);

@@ -14,6 +14,9 @@ ratios:
 screener:
 	python src/screener/engine.py
 
+peer:
+	python src/analytics/peer.py
+
 clean:
 	if exist src\etl\__pycache__ rmdir /s /q src\etl\__pycache__
 	if exist src\analytics\__pycache__ rmdir /s /q src\analytics\__pycache__

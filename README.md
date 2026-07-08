@@ -25,6 +25,7 @@ This repository houses the production-grade data foundation, ETL ingestion pipel
 - **6 Preset Screeners**: Implements and validates Quality Compounder, Value Pick, Growth Accelerator, Dividend Champion, Debt-Free Blue Chip, and Turnaround Watch presets.
 - **Winsorised Sector-Relative Quality Rating**: Calculates per-sector relative composite ratings (Profitability 35%, Cash Quality 30%, Growth 20%, Leverage 15%).
 - **Screener Output**: Generates `output/screener_output.xlsx` containing 6 sheets, color-coded with green/red cells for active thresholds.
+- **Peer Percentile Engine**: Computes percentiles (using Excel-matching `PERCENTRANK.INC` logic) for 10 metrics across all 11 peer groups, populating the SQLite `peer_percentiles` table (with D/E rankings inverted and non-mapped fallbacks).
 
 ---
 
@@ -126,6 +127,14 @@ To execute filters, calculate composite scores, and export `output/screener_outp
 python src/screener/engine.py
 # Or using the Makefile:
 make screener
+```
+
+### Run Peer Percentile Rankings (Sprint 3)
+To compute and populate peer percentiles in SQLite:
+```bash
+python src/analytics/peer.py
+# Or using the Makefile:
+make peer
 ```
 
 ### Run Unit Tests
