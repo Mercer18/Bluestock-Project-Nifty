@@ -67,6 +67,15 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DB_PATH = os.path.join(PROJECT_ROOT, "data", "nifty100.db")
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "screener_config.yaml")
 
+# Safe Formatting Helper
+def safe_format(val, fmt="{:.2f}", suffix=""):
+    if val is None or pd.isna(val) or val == "":
+        return "N/A"
+    try:
+        return fmt.format(float(val)) + suffix
+    except Exception:
+        return str(val) + suffix
+
 # Load Screener Engine
 @st.cache_data
 def get_base_data():
@@ -156,9 +165,12 @@ if page == "🏛️ Executive Overview":
         "return_on_equity_pct": "ROE %", "debt_to_equity": "D/E", "free_cash_flow_cr": "FCF (Cr)",
         "composite_quality_score": "Quality Score"
     })
-    st.dataframe(df_top_display.style.format({
-        "ROE %": "{:.2f}%", "D/E": "{:.2f}x", "FCF (Cr)": "{:,.2f}", "Quality Score": "{:.1f}"
-    }), use_container_width=True, hide_index=True)
+    df_top_formatted = df_top_display.copy()
+    df_top_formatted["ROE %"] = df_top_formatted["ROE %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
+    df_top_formatted["D/E"] = df_top_formatted["D/E"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
+    df_top_formatted["FCF (Cr)"] = df_top_formatted["FCF (Cr)"].apply(lambda v: safe_format(v, "{:,.2f}"))
+    df_top_formatted["Quality Score"] = df_top_formatted["Quality Score"].apply(lambda v: safe_format(v, "{:.1f}"))
+    st.dataframe(df_top_formatted, use_container_width=True, hide_index=True)
 
 # ----------------------------------------------------
 # 2. FINANCIAL SCREENER
@@ -217,11 +229,15 @@ elif page == "🔍 Financial Screener":
                 "pb_ratio": "P/B", "free_cash_flow_cr": "FCF (Cr)", "composite_quality_score": "Quality Score"
             })
             
-            # Format display
-            st.dataframe(df_filtered_disp.style.format({
-                "ROE %": "{:.2f}%", "D/E": "{:.2f}x", "P/E": "{:.2f}x", "P/B": "{:.2f}x",
-                "FCF (Cr)": "{:,.2f}", "Quality Score": "{:.1f}"
-            }), use_container_width=True, hide_index=True)
+            # Format display safely
+            df_filtered_formatted = df_filtered_disp.copy()
+            df_filtered_formatted["ROE %"] = df_filtered_formatted["ROE %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
+            df_filtered_formatted["D/E"] = df_filtered_formatted["D/E"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
+            df_filtered_formatted["P/E"] = df_filtered_formatted["P/E"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
+            df_filtered_formatted["P/B"] = df_filtered_formatted["P/B"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
+            df_filtered_formatted["FCF (Cr)"] = df_filtered_formatted["FCF (Cr)"].apply(lambda v: safe_format(v, "{:,.2f}"))
+            df_filtered_formatted["Quality Score"] = df_filtered_formatted["Quality Score"].apply(lambda v: safe_format(v, "{:.1f}"))
+            st.dataframe(df_filtered_formatted, use_container_width=True, hide_index=True)
             
             # Download csv
             csv = df_filtered.to_csv(index=False).encode('utf-8')
@@ -255,16 +271,16 @@ elif page == "📊 Company Explorer":
         
         # Display cards
         st.write("")
-        st.metric("Composite Quality Rating", f"{df_co_latest['composite_quality_score']:.1f} / 100")
+        st.metric("Composite Quality Rating", safe_format(df_co_latest['composite_quality_score'], "{:.1f}", " / 100"))
         
         st.write("")
         cc1, cc2 = st.columns(2)
         with cc1:
-            st.metric("ROE % (Latest)", f"{df_co_latest['return_on_equity_pct']:.2f}%")
-            st.metric("D/E (Latest)", f"{df_co_latest['debt_to_equity']:.2f}x")
+            st.metric("ROE % (Latest)", safe_format(df_co_latest['return_on_equity_pct'], "{:.2f}", "%"))
+            st.metric("D/E (Latest)", safe_format(df_co_latest['debt_to_equity'], "{:.2f}", "x"))
         with cc2:
-            st.metric("NPM % (Latest)", f"{df_co_latest['net_profit_margin_pct']:.2f}%")
-            st.metric("FCF Cr (Latest)", f"{df_co_latest['free_cash_flow_cr']:.2f}")
+            st.metric("NPM % (Latest)", safe_format(df_co_latest['net_profit_margin_pct'], "{:.2f}", "%"))
+            st.metric("FCF Cr (Latest)", safe_format(df_co_latest['free_cash_flow_cr'], "{:.2f}"))
             
     with col2:
         st.subheader("Financial Performance Tabs")
@@ -289,10 +305,16 @@ elif page == "📊 Company Explorer":
                 "return_on_equity_pct": "ROE %", "debt_to_equity": "D/E", "interest_coverage": "ICR",
                 "free_cash_flow_cr": "FCF (Cr)", "revenue_cagr_5yr": "Sales CAGR 5Yr %", "composite_quality_score": "Composite Score"
             })
-            st.dataframe(df_table.style.format({
-                "NPM %": "{:.2f}%", "OPM %": "{:.2f}%", "ROE %": "{:.2f}%", "D/E": "{:.2f}x",
-                "ICR": "{:.2f}x", "FCF (Cr)": "{:,.2f}", "Sales CAGR 5Yr %": "{:.2f}%", "Composite Score": "{:.1f}"
-            }), use_container_width=True, hide_index=True)
+            df_disp = df_table.copy()
+            df_disp["NPM %"] = df_disp["NPM %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
+            df_disp["OPM %"] = df_disp["OPM %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
+            df_disp["ROE %"] = df_disp["ROE %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
+            df_disp["D/E"] = df_disp["D/E"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
+            df_disp["ICR"] = df_disp["ICR"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
+            df_disp["FCF (Cr)"] = df_disp["FCF (Cr)"].apply(lambda v: safe_format(v, "{:,.2f}"))
+            df_disp["Sales CAGR 5Yr %"] = df_disp["Sales CAGR 5Yr %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
+            df_disp["Composite Score"] = df_disp["Composite Score"].apply(lambda v: safe_format(v, "{:.1f}"))
+            st.dataframe(df_disp, use_container_width=True, hide_index=True)
 
 # ----------------------------------------------------
 # 4. PEER COMPARISON
@@ -338,10 +360,21 @@ elif page == "👥 Peer Comparison":
             "revenue_cagr_5yr": "Sales CAGR 5Yr %", "composite_quality_score": "Composite Score"
         })
         
-        st.dataframe(df_peer_disp.style.apply(highlight_benchmark, axis=1).format({
-            "ROE %": "{:.2f}%", "D/E": "{:.2f}x", "ICR": "{:.2f}x", "FCF (Cr)": "{:,.2f}",
-            "Sales CAGR 5Yr %": "{:.2f}%", "Composite Score": "{:.1f}"
-        }), use_container_width=True, hide_index=True)
+        df_disp = df_peer_disp.copy()
+        df_disp["ROE %"] = df_disp["ROE %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
+        df_disp["D/E"] = df_disp["D/E"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
+        df_disp["ICR"] = df_disp["ICR"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
+        df_disp["FCF (Cr)"] = df_disp["FCF (Cr)"].apply(lambda v: safe_format(v, "{:,.2f}"))
+        df_disp["Sales CAGR 5Yr %"] = df_disp["Sales CAGR 5Yr %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
+        df_disp["Composite Score"] = df_disp["Composite Score"].apply(lambda v: safe_format(v, "{:.1f}"))
+        
+        cols_to_show = ["Ticker", "Company Name", "ROE %", "D/E", "ICR", "FCF (Cr)", "Sales CAGR 5Yr %", "Composite Score"]
+        st.dataframe(
+            df_disp.style.apply(highlight_benchmark, axis=1),
+            column_order=cols_to_show,
+            use_container_width=True,
+            hide_index=True
+        )
         
         # Side-by-Side Radar Comparisons
         st.write("")
