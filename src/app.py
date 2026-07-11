@@ -1,4 +1,8 @@
 import os
+import sys
+# Ensure repository root is in python path for Streamlit Cloud deployment
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import sqlite3
 import yaml
 import pandas as pd
