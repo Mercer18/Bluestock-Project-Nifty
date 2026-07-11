@@ -351,7 +351,9 @@ elif page == "👥 Peer Comparison":
     # Query database for all companies in this peer group and latest metrics
     conn = sqlite3.connect(DB_PATH)
     df_peer_list = pd.read_sql_query(
-        "SELECT pg.company_id, pg.is_benchmark, r.*, c.company_name "
+        "SELECT pg.company_id, pg.is_benchmark, c.company_name, "
+        "r.return_on_equity_pct, r.debt_to_equity, r.interest_coverage, "
+        "r.free_cash_flow_cr, r.revenue_cagr_5yr, r.composite_quality_score "
         "FROM peer_groups pg "
         "JOIN financial_ratios r ON pg.company_id = r.company_id "
         "JOIN companies c ON pg.company_id = c.id "
