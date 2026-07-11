@@ -201,7 +201,14 @@ elif page == "🔍 Financial Screener":
         def get_slider_val(key, default, min_val, max_val, step):
             preset_val = preset_vals.get(key)
             val = float(preset_val) if preset_val is not None else default
-            return st.slider(key.replace("_min", " min").replace("_max", " max").upper(), min_val, max_val, val, step)
+            return st.slider(
+                key.replace("_min", " min").replace("_max", " max").upper(), 
+                min_val, 
+                max_val, 
+                val, 
+                step,
+                key=f"slider_{key}_{preset_choice}"
+            )
             
         thresholds["roe_min"] = get_slider_val("roe_min", 0.0, -50.0, 100.0, 1.0)
         thresholds["de_max"] = get_slider_val("de_max", 5.0, 0.0, 10.0, 0.1)
@@ -209,6 +216,12 @@ elif page == "🔍 Financial Screener":
         thresholds["revenue_cagr_5yr_min"] = get_slider_val("revenue_cagr_5yr_min", 0.0, -50.0, 100.0, 1.0)
         thresholds["pe_max"] = get_slider_val("pe_max", 100.0, 0.0, 200.0, 5.0)
         thresholds["pb_max"] = get_slider_val("pb_max", 30.0, 0.0, 50.0, 1.0)
+        
+        # Merge other preset rules that are not represented by sliders
+        if preset_choice != "Custom":
+            for pk, pv in preset_vals.items():
+                if pk not in thresholds:
+                    thresholds[pk] = pv
         
     with scol2:
         st.subheader("Screener Results (FY 2024)")
@@ -383,12 +396,12 @@ elif page == "👥 Peer Comparison":
         cos_in_peer = sorted(df_peer_list["company_id"].unique())
         cc1, cc2 = st.columns(2)
         with cc1:
-            co1 = st.selectbox("Company 1", cos_in_peer, index=0)
+            co1 = st.selectbox("Company 1", cos_in_peer, index=0, key=f"co1_{peer_choice}")
             img1_path = os.path.join(PROJECT_ROOT, "reports", "radar_charts", f"{co1}_radar.png")
             if os.path.exists(img1_path):
                 st.image(img1_path, use_column_width=True)
         with cc2:
-            co2 = st.selectbox("Company 2", cos_in_peer, index=min(1, len(cos_in_peer)-1))
+            co2 = st.selectbox("Company 2", cos_in_peer, index=min(1, len(cos_in_peer)-1), key=f"co2_{peer_choice}")
             img2_path = os.path.join(PROJECT_ROOT, "reports", "radar_charts", f"{co2}_radar.png")
             if os.path.exists(img2_path):
                 st.image(img2_path, use_column_width=True)
