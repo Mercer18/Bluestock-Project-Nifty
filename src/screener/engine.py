@@ -121,17 +121,23 @@ class ScreenerEngine:
         df = pd.merge(df, df_pl, on=["company_id", "year"], how="left")
         df = pd.merge(df, df_bs, on=["company_id", "year"], how="left")
         
-        # Load CAGR data to get sales_cagr_3yr (3-year Revenue CAGR)
-        from src.analytics.cagr import CAGRCalculationEngine
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        cagr_log = os.path.join(project_root, "output", "ratio_edge_cases.log")
+        # Calculate sales_cagr_3yr dynamically in-memory
+        df = df.sort_values(by=["company_id", "year"])
+        df["sales_prev_3"] = df.groupby("company_id")["sales"].shift(3)
         
-        cagr_engine = CAGRCalculationEngine(db_path=self.db_path, log_path=cagr_log)
-        df_cagr = cagr_engine.run_cagr_pipeline()
-        
-        # Select CAGR columns to merge
-        df_cagr_sel = df_cagr[["company_id", "year", "sales_cagr_3yr"]].copy()
-        df = pd.merge(df, df_cagr_sel, on=["company_id", "year"], how="left")
+        def compute_cagr_val(start, end, n=3):
+            if start is None or pd.isna(start) or end is None or pd.isna(end):
+                return None
+            if start <= 0 or end <= 0:
+                return None
+            try:
+                return ((end / start) ** (1.0 / n) - 1.0) * 100.0
+            except Exception:
+                return None
+                
+        df["sales_cagr_3yr"] = df.apply(
+            lambda r: compute_cagr_val(r["sales_prev_3"], r["sales"], 3), axis=1
+        )
         
         # Calculate ROCE on the fly
         from src.analytics.sector_roce import calculate_single_roce
