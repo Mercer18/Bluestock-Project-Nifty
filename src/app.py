@@ -277,7 +277,12 @@ elif page == "📊 Company Explorer":
         co_choice = st.selectbox("Search Constituent Company", sorted(df_base["company_id"].unique()))
         
         df_co = df_base[df_base["company_id"] == co_choice].sort_values(by="year")
-        df_co_latest = df_co.iloc[-1]
+        # Default to 2024-03 for core metrics if available to display complete annual data
+        df_co_latest_mask = df_co["year"] == "2024-03"
+        if df_co_latest_mask.any():
+            df_co_latest = df_co[df_co_latest_mask].iloc[0]
+        else:
+            df_co_latest = df_co.iloc[-1]
         
         st.markdown(f"### **{df_co_latest['company_name']}**")
         st.write(f"**Sector**: {df_co_latest['broad_sector']} | **Sub-sector**: {df_co_latest['sub_sector']}")
@@ -381,10 +386,8 @@ elif page == "👥 Peer Comparison":
         df_disp["Sales CAGR 5Yr %"] = df_disp["Sales CAGR 5Yr %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
         df_disp["Composite Score"] = df_disp["Composite Score"].apply(lambda v: safe_format(v, "{:.1f}"))
         
-        cols_to_show = ["Ticker", "Company Name", "ROE %", "D/E", "ICR", "FCF (Cr)", "Sales CAGR 5Yr %", "Composite Score"]
         st.dataframe(
-            df_disp.style.apply(highlight_benchmark, axis=1),
-            column_order=cols_to_show,
+            df_disp.style.apply(highlight_benchmark, axis=1).hide(subset=["is_benchmark"], axis=1),
             use_container_width=True,
             hide_index=True
         )
