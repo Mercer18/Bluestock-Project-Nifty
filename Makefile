@@ -20,6 +20,9 @@ peer:
 radar:
 	python src/analytics/radar.py
 
+run-app:
+	streamlit run src/app.py
+
 clean:
 	if exist src\etl\__pycache__ rmdir /s /q src\etl\__pycache__
 	if exist src\analytics\__pycache__ rmdir /s /q src\analytics\__pycache__
