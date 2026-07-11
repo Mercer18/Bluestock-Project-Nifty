@@ -364,10 +364,7 @@ elif page == "👥 Peer Comparison":
         # Display comparison table
         st.write(f"### **{peer_choice}** Industry Peer Matrix (FY 2024)")
         
-        # Highlight benchmark
-        def highlight_benchmark(row):
-            is_bench = row["is_benchmark"] == 1 or row["is_benchmark"] is True
-            return ['background-color: #FFE599' if is_bench else '' for _ in row]
+
             
         df_peer_disp = df_peer_list[[
             "company_id", "company_name", "return_on_equity_pct", "debt_to_equity",
@@ -379,6 +376,7 @@ elif page == "👥 Peer Comparison":
         })
         
         df_disp = df_peer_disp.copy()
+        df_disp["Benchmark"] = df_disp["is_benchmark"].apply(lambda b: "⭐ Yes" if b == 1 or b is True else "No")
         df_disp["ROE %"] = df_disp["ROE %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
         df_disp["D/E"] = df_disp["D/E"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
         df_disp["ICR"] = df_disp["ICR"].apply(lambda v: safe_format(v, "{:.2f}", "x"))
@@ -386,11 +384,8 @@ elif page == "👥 Peer Comparison":
         df_disp["Sales CAGR 5Yr %"] = df_disp["Sales CAGR 5Yr %"].apply(lambda v: safe_format(v, "{:.2f}", "%"))
         df_disp["Composite Score"] = df_disp["Composite Score"].apply(lambda v: safe_format(v, "{:.1f}"))
         
-        st.dataframe(
-            df_disp.style.apply(highlight_benchmark, axis=1).hide(subset=["is_benchmark"], axis=1),
-            use_container_width=True,
-            hide_index=True
-        )
+        df_disp = df_disp.drop(columns=["is_benchmark"])
+        st.dataframe(df_disp, use_container_width=True, hide_index=True)
         
         # Side-by-Side Radar Comparisons
         st.write("")
