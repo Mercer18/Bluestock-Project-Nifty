@@ -291,7 +291,7 @@ elif page == "📊 Company Explorer":
             # Load radar chart image
             img_path = os.path.join(PROJECT_ROOT, "reports", "radar_charts", f"{co_choice}_radar.png")
             if os.path.exists(img_path):
-                st.image(img_path, use_container_width=True)
+                st.image(img_path, use_column_width=True)
             else:
                 st.warning("Radar chart image not found. Ensure reports/radar_charts/ is generated.")
                 
@@ -386,12 +386,12 @@ elif page == "👥 Peer Comparison":
             co1 = st.selectbox("Company 1", cos_in_peer, index=0)
             img1_path = os.path.join(PROJECT_ROOT, "reports", "radar_charts", f"{co1}_radar.png")
             if os.path.exists(img1_path):
-                st.image(img1_path, use_container_width=True)
+                st.image(img1_path, use_column_width=True)
         with cc2:
             co2 = st.selectbox("Company 2", cos_in_peer, index=min(1, len(cos_in_peer)-1))
             img2_path = os.path.join(PROJECT_ROOT, "reports", "radar_charts", f"{co2}_radar.png")
             if os.path.exists(img2_path):
-                st.image(img2_path, use_container_width=True)
+                st.image(img2_path, use_column_width=True)
 
 # ----------------------------------------------------
 # 5. QUALITY & ANOMALIES
