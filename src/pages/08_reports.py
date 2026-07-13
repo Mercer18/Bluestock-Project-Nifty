@@ -50,8 +50,8 @@ if search_choice:
         # Display as a table or list
         for _, row in df_docs.iterrows():
             year_val = row["year"]
-            doc_url = row["document_url"]
-            report_type = row["report_type"] or "Annual Report"
+            doc_url = row["annual_report"]
+            report_type = "Annual Report"
             
             col1, col2 = st.columns([1, 4])
             

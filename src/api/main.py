@@ -413,10 +413,11 @@ def get_company_documents(ticker: str):
         
     records = []
     for _, row in df.iterrows():
+        url = row["annual_report"]
         records.append({
-            "report_type": row["report_type"],
-            "year": row["year"],
-            "document_url": row["document_url"],
-            "is_url_valid": True if row["document_url"] and str(row["document_url"]).startswith("http") else False
+            "report_type": "Annual Report",
+            "year": int(row["year"]) if not pd.isna(row["year"]) else None,
+            "document_url": url if not pd.isna(url) else None,
+            "is_url_valid": True if url and isinstance(url, str) and url.startswith("http") else False
         })
     return records

@@ -71,14 +71,15 @@ if peer_choice:
         # Get selected company row and group average
         co_row = df_peer_list[df_peer_list["company_id"] == selected_co].iloc[0]
         
-        # We need ROCE for radar chart. Let's load ROCE for latest year dynamically
         conn = get_connection()
         df_bs_latest = pd.read_sql_query("SELECT company_id, equity_capital, reserves, borrowings FROM balancesheet WHERE year = '2024-03'", conn)
-        df_pl_latest = pd.read_sql_query("SELECT company_id, profit_before_tax, interest, net_profit_margin_pct FROM profitandloss WHERE year = '2024-03'", conn)
+        df_pl_latest = pd.read_sql_query("SELECT company_id, profit_before_tax, interest FROM profitandloss WHERE year = '2024-03'", conn)
+        df_ratios_latest = pd.read_sql_query("SELECT company_id, net_profit_margin_pct FROM financial_ratios WHERE year = '2024-03'", conn)
         conn.close()
         
         # Calculate ROCE for all companies in peer list
-        df_roce = df_bs_latest.merge(df_pl_latest, on="company_id", how="inner")
+        df_pl_ratios = df_pl_latest.merge(df_ratios_latest, on="company_id", how="inner")
+        df_roce = df_bs_latest.merge(df_pl_ratios, on="company_id", how="inner")
         df_roce["roce"] = (df_roce["profit_before_tax"].fillna(0) + df_roce["interest"].fillna(0)) / (
             df_roce["equity_capital"].fillna(0) + df_roce["reserves"].fillna(0) + df_roce["borrowings"].fillna(0)
         ) * 100
