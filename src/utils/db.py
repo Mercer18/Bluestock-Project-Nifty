@@ -9,7 +9,7 @@ import pandas as pd
 import streamlit as st
 
 # Resolve paths
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DB_PATH = os.path.join(PROJECT_ROOT, "data", "nifty100.db")
 
 def get_connection():
