@@ -11,6 +11,7 @@ import pandas as pd
 
 # Add src/ to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from src.utils.db import get_connection
 
 st.set_page_config(page_title="Nifty 100 Analytics - Capital Map", layout="wide")
 

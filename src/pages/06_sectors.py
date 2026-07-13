@@ -13,7 +13,7 @@ import numpy as np
 
 # Add src/ to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from src.dashboard.utils.db import get_companies, get_ratios, get_valuation
+from src.utils.db import get_connection, get_companies, get_ratios, get_valuation
 
 st.set_page_config(page_title="Nifty 100 Analytics - Sectors", layout="wide")
 
