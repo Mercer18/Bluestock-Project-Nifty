@@ -1,0 +1,38 @@
+company_id,previous_pattern,latest_pattern
+ABB,Mixed,Shareholder Returns
+ADANIENSOL,Mixed,Shareholder Returns
+ADANIENT,Shareholder Returns,Mixed
+ADANIGREEN,Reinvestor,Mixed
+AXISBANK,Mixed,Growth Funded by Debt
+BAJAJ-AUTO,Liquidating Assets,Reinvestor
+BANKBARODA,Pre-Revenue,Growth Funded by Debt
+BEL,Liquidating Assets,Shareholder Returns
+BRITANNIA,Shareholder Returns,Liquidating Assets
+CANBK,Growth Funded by Debt,Shareholder Returns
+DLF,Shareholder Returns,Mixed
+GAIL,Mixed,Reinvestor
+GODREJCP,Shareholder Returns,Mixed
+HAVELLS,Liquidating Assets,Shareholder Returns
+HDFCBANK,Mixed,Liquidating Assets
+HDFCLIFE,Mixed,Shareholder Returns
+ICICIBANK,Growth Funded by Debt,Mixed
+ICICIPRULI,Shareholder Returns,Mixed
+INDUSINDBK,Growth Funded by Debt,Pre-Revenue
+IRCTC,Shareholder Returns,Reinvestor
+IRFC,Growth Funded by Debt,Reinvestor
+ITC,Reinvestor,Liquidating Assets
+JINDALSTEL,Reinvestor,Mixed
+JIOFIN,Shareholder Returns,Mixed
+KOTAKBANK,Growth Funded by Debt,Mixed
+LODHA,Liquidating Assets,Mixed
+LT,Shareholder Returns,Liquidating Assets
+LTIM,Reinvestor,Shareholder Returns
+MOTHERSON,Shareholder Returns,Mixed
+PNB,Mixed,Growth Funded by Debt
+RELIANCE,Mixed,Shareholder Returns
+SHRIRAMFIN,Distress Signal,Growth Funded by Debt
+SUNPHARMA,Mixed,Shareholder Returns
+TATACONSUM,Shareholder Returns,Mixed
+TATAPOWER,Mixed,Shareholder Returns
+TITAN,Mixed,Reinvestor
+TORNTPHARM,Mixed,Shareholder Returns

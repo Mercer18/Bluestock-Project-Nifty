@@ -229,11 +229,11 @@ class CashFlowKPIEngine:
         return df
 
     def save_deliverables(self):
-        """Generates CSV files in the output directory."""
+        """Generates all Sprint 5 cash flow intelligence deliverables."""
         df_results = self.compute_all_kpis()
         os.makedirs(self.output_dir, exist_ok=True)
 
-        # Save output/capital_allocation.csv
+        # 1. Save output/capital_allocation.csv (All years)
         alloc_path = os.path.join(self.output_dir, "capital_allocation.csv")
         df_alloc_csv = df_results[
             ["company_id", "year", "cfo_sign", "cfi_sign", "cff_sign", "pattern_label"]
@@ -247,6 +247,122 @@ class CashFlowKPIEngine:
         )
         df_alloc_csv.to_csv(alloc_path, index=False)
         print(f"Saved Capital Allocation deliverables to: {alloc_path}")
+
+        # Load sector mapping from database
+        conn = sqlite3.connect(self.db_path)
+        df_sectors = pd.read_sql_query("SELECT company_id, broad_sector as sector FROM sectors", conn)
+        conn.close()
+
+        # Merge sectors
+        df_merged = df_results.merge(df_sectors, on="company_id", how="left")
+
+        # 2. Compute 5-year FCF CAGR dynamically
+        company_dfs = {co: df_merged[df_merged["company_id"] == co].copy() for co in df_merged["company_id"].unique()}
+        
+        fcf_cagrs = []
+        for idx, row in df_merged.iterrows():
+            co = row["company_id"]
+            yr = row["year"]
+            try:
+                parts = yr.split("-")
+                curr_y = int(parts[0])
+                suffix = parts[1]
+                start_year = f"{curr_y - 5:04d}-{suffix}"
+                df_co = company_dfs[co]
+                start_fcf = df_co[df_co["year"] == start_year]["fcf"].values
+                end_fcf = row["fcf"]
+                if len(start_fcf) > 0 and not pd.isna(start_fcf[0]) and not pd.isna(end_fcf):
+                    s_val = start_fcf[0]
+                    if s_val <= 0:
+                        fcf_cagrs.append(np.nan) # Turnaround or negative base
+                    else:
+                        fcf_cagrs.append(float(((end_fcf / s_val) ** 0.2) - 1.0) * 100.0)
+                else:
+                    fcf_cagrs.append(np.nan)
+            except Exception:
+                fcf_cagrs.append(np.nan)
+                
+        df_merged["fcf_cagr_5yr"] = fcf_cagrs
+
+        # 3. Compute flags for 2024-03 latest year
+        # Distress flag: CFO < 0 and CFF > 0 in latest year
+        df_merged["distress_flag"] = np.where(
+            (df_merged["operating_activity"] < 0) & (df_merged["financing_activity"] > 0),
+            1, 0
+        )
+
+        # Deleveraging flag: CFF < 0 and borrowings declining YoY
+        deleveraging = []
+        for idx, row in df_merged.iterrows():
+            co = row["company_id"]
+            yr = row["year"]
+            cff = row["financing_activity"]
+            borr = row["borrowings"]
+            try:
+                parts = yr.split("-")
+                curr_y = int(parts[0])
+                suffix = parts[1]
+                prev_year = f"{curr_y - 1:04d}-{suffix}"
+                df_co = company_dfs[co]
+                prev_borr = df_co[df_co["year"] == prev_year]["borrowings"].values
+                if len(prev_borr) > 0 and (cff or 0.0) < 0 and borr < prev_borr[0]:
+                    deleveraging.append(1)
+                else:
+                    deleveraging.append(0)
+            except Exception:
+                deleveraging.append(0)
+                
+        df_merged["deleveraging_flag"] = deleveraging
+
+        # Latest year filter (2024-03)
+        df_latest = df_merged[df_merged["year"] == "2024-03"].copy()
+
+        # Prepare cashflow_intelligence output columns
+        # columns: company_id, sector, cfo_quality_score, cfo_quality_label, capex_intensity_pct, capex_label, fcf_cagr_5yr, fcf_conversion_pct, distress_flag, deleveraging_flag, capital_allocation_label
+        df_cf_intel = df_latest[[
+            "company_id", "sector", "cfo_quality_avg", "cfo_quality_label", 
+            "capex_intensity", "capex_intensity_label", "fcf_cagr_5yr", 
+            "fcf_conversion", "distress_flag", "deleveraging_flag", "pattern_label"
+        ]].rename(columns={
+            "cfo_quality_avg": "cfo_quality_score",
+            "capex_intensity": "capex_intensity_pct",
+            "capex_intensity_label": "capex_label",
+            "fcf_conversion": "fcf_conversion_pct",
+            "pattern_label": "capital_allocation_label"
+        })
+
+        intel_path = os.path.join(self.output_dir, "cashflow_intelligence.xlsx")
+        df_cf_intel.to_excel(intel_path, index=False, sheet_name="CF Intelligence")
+        print(f"Saved Cash Flow Intelligence to: {intel_path}")
+
+        # 4. Save output/distress_alerts.csv
+        # include: company_id, CFO, CFF, net_profit
+        df_distress = df_latest[df_latest["distress_flag"] == 1][[
+            "company_id", "operating_activity", "financing_activity", "net_profit"
+        ]].rename(columns={
+            "operating_activity": "CFO",
+            "financing_activity": "CFF"
+        })
+        distress_path = os.path.join(self.output_dir, "distress_alerts.csv")
+        df_distress.to_csv(distress_path, index=False)
+        print(f"Saved Distress Alerts to: {distress_path}")
+
+        # 5. Save output/pattern_changes.csv (2024 vs 2023 pattern changes)
+        pattern_changes = []
+        for co in df_merged["company_id"].unique():
+            df_co = company_dfs[co]
+            p_23 = df_co[df_co["year"] == "2023-03"]["pattern_label"].values
+            p_24 = df_co[df_co["year"] == "2024-03"]["pattern_label"].values
+            if len(p_23) > 0 and len(p_24) > 0 and p_23[0] != p_24[0]:
+                pattern_changes.append({
+                    "company_id": co,
+                    "previous_pattern": p_23[0],
+                    "latest_pattern": p_24[0]
+                })
+        df_changes = pd.DataFrame(pattern_changes)
+        changes_path = os.path.join(self.output_dir, "pattern_changes.csv")
+        df_changes.to_csv(changes_path, index=False)
+        print(f"Saved Pattern Changes to: {changes_path}")
 
 
 if __name__ == "__main__":
