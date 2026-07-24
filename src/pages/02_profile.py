@@ -13,7 +13,8 @@ import pandas as pd
 import numpy as np
 
 # Add src/ to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(PROJECT_ROOT)
 from src.utils.db import get_connection, get_companies, get_ratios, get_pl, get_bs, get_cf
 
 st.set_page_config(page_title="Nifty 100 Analytics - Company Profile", layout="wide")

@@ -27,7 +27,7 @@ def sf(val, fmt="{:.2f}", suffix=""):
 st.markdown('<h1 style="color:#1F4E79; font-weight:bold;">🔍 Interactive Financial Screener</h1>', unsafe_allow_html=True)
 
 # Load configurations
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "screener_config.yaml")
 
 presets = {}
